@@ -1,32 +1,35 @@
-// TODO: profile form save/load
 // assets/js/profile.js
-import { supa } from './app.js';
+import { supabase } from './supabaseClient.js';
+const $ = (s,r=document)=>r.querySelector(s);
+const el = { form: $('[data-prof-form]') };
 
-const form = document.querySelector('[data-prof-form]');
+function toast(m){ console.log('[profile]', m); }
 
 async function load() {
-  const { data:{ user } } = await supa.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  const { data: p } = await supa.from('profiles').select('*').eq('id', user.id).single();
-
-  form.full_name.value = p?.full_name||'';
-  form.email.value = p?.email||'';
-  form.preferred_language.value = p?.preferred_language||'ro';
-  form.preferred_bible.value = p?.preferred_bible||'NTR';
-  form.preferred_template.value = p?.preferred_template||'lyrics_chords';
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  if (error) { toast(error.message); return; }
+  el.form.full_name.value = data.full_name || '';
+  el.form.email.value = data.email || user.email || '';
+  el.form.preferred_language.value = data.preferred_language || 'ro';
+  el.form.preferred_bible.value = data.preferred_bible || '';
+  el.form.preferred_template.value = data.preferred_template || 'lyrics_chords';
 }
 
-form?.addEventListener('submit', async (e)=>{
+el.form?.addEventListener('submit', async (e)=>{
   e.preventDefault();
-  const fd = new FormData(form);
-  const { data:{ user } } = await supa.auth.getUser();
-  await supa.from('profiles').update({
-    full_name: fd.get('full_name'),
-    preferred_language: fd.get('preferred_language'),
-    preferred_bible: fd.get('preferred_bible'),
-    preferred_template: fd.get('preferred_template')
-  }).eq('id', user.id);
-  alert('Saved!');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const fd = new FormData(el.form);
+  const payload = {
+    full_name: fd.get('full_name')?.toString() || null,
+    preferred_language: fd.get('preferred_language')?.toString() || 'ro',
+    preferred_bible: fd.get('preferred_bible')?.toString() || null,
+    preferred_template: fd.get('preferred_template')?.toString() || 'lyrics_chords',
+  };
+  const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
+  if (error) toast(error.message); else toast('Saved.');
 });
 
 load();
