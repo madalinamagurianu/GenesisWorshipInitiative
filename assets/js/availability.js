@@ -1,71 +1,67 @@
-// TODO: availability CRUD
 // assets/js/availability.js
-import { supa } from './app.js';
+import { supabase } from './supabaseClient.js';
+const $ = (sel, root=document) => root.querySelector(sel);
+const el = { tbody: $('[data-av-body]') };
 
-const tbody = document.querySelector('[data-av-body]');
+function fmtDate(d){ return new Date(d).toLocaleDateString(); }
+function toast(m){ console.log('[availability]', m); }
 
-async function getDates() {
-  // Next 12 Sundays + any playlist.service_date within that range
-  const today = new Date();
-  const dates = [];
-  const add = d => { const s = d.toISOString().slice(0,10); if (!dates.includes(s)) dates.push(s); };
-
-  // Sundays
-  let d = new Date(today);
-  while (dates.length < 12) {
-    d.setDate(d.getDate() + 1);
-    if (d.getDay() === 0) add(new Date(d));
-  }
-
-  // Playlists
-  const until = dates[dates.length-1];
-  const { data: pls } = await supa.from('playlists')
-    .select('service_date').gte('service_date', today.toISOString().slice(0,10)).lte('service_date', until);
-  (pls||[]).forEach(p => add(new Date(p.service_date)));
-
-  return dates.sort();
+async function loadMyId() {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id || null;
 }
 
-async function load() {
-  const { data: { user } } = await supa.auth.getUser();
-  const uid = user?.id;
-  if (!uid) return;
+async function loadRows(myId) {
+  const { data, error } = await supabase
+    .from('availability')
+    .select('id, service_date, status, note')
+    .order('service_date');
+  if (error) { toast(error.message); return []; }
+  // In UI we’ll show all dates; editing restricted by RLS (you can edit only yours)
+  return data;
+}
 
-  const dates = await getDates();
-  const { data: recs } = await supa.from('availability')
-    .select('service_date,status,note').eq('user_id', uid);
+function render(rows) {
+  el.tbody.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
 
-  const map = new Map((recs||[]).map(r => [r.service_date, r]));
-  tbody.innerHTML = dates.map(s => {
-    const r = map.get(s);
-    return `
-      <tr data-date="${s}">
-        <td>${new Date(s).toLocaleDateString()}</td>
-        <td>
-          <select data-status>
-            <option value="" ${!r?.status?'selected':''}>—</option>
-            <option value="available" ${r?.status==='available'?'selected':''}>Available</option>
-            <option value="maybe" ${r?.status==='maybe'?'selected':''}>Maybe</option>
-            <option value="unavailable" ${r?.status==='unavailable'?'selected':''}>Unavailable</option>
-          </select>
-        </td>
-        <td><input class="input" data-note value="${r?.note||''}"></td>
-      </tr>
+    const tdDate = document.createElement('td');
+    tdDate.textContent = fmtDate(r.service_date);
+    tr.appendChild(tdDate);
+
+    const tdStatus = document.createElement('td');
+    const sel = document.createElement('select');
+    sel.innerHTML = `
+      <option value="available">Available</option>
+      <option value="maybe">Maybe</option>
+      <option value="unavailable">Unavailable</option>
     `;
-  }).join('');
+    sel.value = r.status || 'maybe';
+    sel.addEventListener('change', async () => {
+      const { error } = await supabase.from('availability').update({ status: sel.value }).eq('id', r.id);
+      if (error) toast(error.message);
+    });
+    tdStatus.appendChild(sel);
+    tr.appendChild(tdStatus);
+
+    const tdNote = document.createElement('td');
+    const note = document.createElement('input');
+    note.value = r.note || '';
+    note.placeholder = 'Comments…';
+    note.addEventListener('change', async () => {
+      const { error } = await supabase.from('availability').update({ note: note.value }).eq('id', r.id);
+      if (error) toast(error.message);
+    });
+    tdNote.appendChild(note);
+    tr.appendChild(tdNote);
+
+    el.tbody.appendChild(tr);
+  });
 }
 
-tbody?.addEventListener('change', async (e) => {
-  const tr = e.target.closest('tr[data-date]'); if (!tr) return;
-  const sdate = tr.dataset.date;
-  const status = tr.querySelector('[data-status]').value || null;
-  const note = tr.querySelector('[data-note]').value || null;
-
-  const { data: { user } } = await supa.auth.getUser();
-  const uid = user?.id;
-  await supa.from('availability').upsert({
-    user_id: uid, service_date: sdate, status, note
-  }, { onConflict: 'user_id,service_date' });
-});
-
-load();
+(async function init() {
+  const myId = await loadMyId();
+  const rows = await loadRows(myId);
+  render(rows);
+})();
