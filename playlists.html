@@ -31,7 +31,30 @@
     </nav>
   </div>
 </header>
+<div data-pl-tabs>
+  <button data-tab="sunday">Sundays</button>
+  <button data-tab="holiday">Holidays</button>
+  <button data-tab="event">Events</button>
+</div>
 
+<aside data-pl-rail></aside>
+
+<section>
+  <h2 data-pl-title></h2>
+  <div>Date: <span data-pl-date></span></div>
+
+  <select data-md-picker></select>
+  <input type="checkbox" data-follow-md>
+
+  <button data-add-row>Add song</button>
+  <button data-save>Save</button>
+  <button data-publish>Publish</button>
+
+  <table>
+    <thead>...</thead>
+    <tbody data-pl-body></tbody>
+  </table>
+</section>
 <main class="container">
   <section class="card glass">
     <h1>Playlists</h1>
