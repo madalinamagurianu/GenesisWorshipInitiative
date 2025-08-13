@@ -1,55 +1,81 @@
-// TODO: prayer wall with filters & reactions
 // assets/js/prayers.js
-import { supa } from './app.js';
+import { supabase } from './supabaseClient.js';
 
-const form = document.querySelector('[data-pr-form]');
-const list = document.querySelector('[data-pr-list]');
-const filter = document.querySelector('[data-pr-filter]');
-const counter = document.querySelector('[data-pr-counter]');
+const $ = (sel, root=document) => root.querySelector(sel);
+const el = {
+  form: $('[data-pr-form]'),
+  filter: $('[data-pr-filter]'),
+  counter: $('[data-pr-counter]'),
+  list: $('[data-pr-list]'),
+};
 
-async function load() {
-  let query = supa.from('prayers').select('id,title,content,image_url,answered,created_at');
-  if (filter.value === 'answered') query = query.eq('answered', true);
-  if (filter.value === 'open') query = query.eq('answered', false);
-  const { data } = await query.order('created_at', { ascending: false });
+function toast(m){ console.log('[prayers]', m); }
 
-  const { data: all } = await supa.from('prayers').select('id,answered');
-  const answered = (all||[]).filter(x => x.answered).length;
-  counter.textContent = `${answered} answered`;
-
-  list.innerHTML = (data||[]).map(p => `
-    <article class="card">
-      <header><strong>${p.title}</strong>
-        <label class="switch">
-          <input type="checkbox" data-toggle="${p.id}" ${p.answered?'checked':''}> Answered
-        </label>
-      </header>
-      <p>${p.content||''}</p>
-      ${p.image_url?`<img src="${p.image_url}" alt="">`:''}
-      <footer class="muted">${new Date(p.created_at).toLocaleString()}</footer>
-    </article>
-  `).join('') || `<div class="muted p-3">No prayers yet.</div>`;
+async function loadPrayers(filter='all') {
+  let q = supabase.from('prayers').select('id,title,content,image_url,answered,created_at,created_by').order('created_at', { ascending: false });
+  if (filter === 'answered') q = q.eq('answered', true);
+  if (filter === 'unanswered') q = q.eq('answered', false);
+  const { data, error } = await q;
+  if (error) { toast(error.message); return []; }
+  return data || [];
 }
 
-filter?.addEventListener('change', load);
+async function loadAnsweredCount() {
+  const { count, error } = await supabase.from('prayers').select('id', { count: 'exact', head: true }).eq('answered', true);
+  if (error) { toast(error.message); return 0; }
+  return count || 0;
+}
 
-list?.addEventListener('change', async (e) => {
-  const t = e.target.closest('[data-toggle]');
-  if (!t) return;
-  await supa.from('prayers').update({ answered: e.target.checked }).eq('id', t.dataset.toggle);
-  load();
-});
+function renderList(list) {
+  el.list.innerHTML = '';
+  list.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-header">
+        <h3>${p.title}</h3>
+        <label>
+          <input type="checkbox" ${p.answered ? 'checked':''} data-answered>
+          answered
+        </label>
+      </div>
+      <p>${p.content || ''}</p>
+      ${p.image_url ? `<img src="${p.image_url}" alt="" style="max-width:100%;border-radius:8px;" />` : ''}
+      <div class="card-actions">
+        <button data-react>🙂 React</button>
+        <button data-comment>💬 Comment</button>
+      </div>
+    `;
+    card.querySelector('[data-answered]').addEventListener('change', async (e) => {
+      const { error } = await supabase.from('prayers').update({ answered: e.target.checked }).eq('id', p.id);
+      if (error) toast(error.message);
+      else refresh();
+    });
+    el.list.appendChild(card);
+  });
+}
 
-form?.addEventListener('submit', async (e) => {
+async function refresh() {
+  const filter = el.filter?.value || 'all';
+  renderList(await loadPrayers(filter));
+  const answered = await loadAnsweredCount();
+  el.counter.textContent = `Answered: ${answered}`;
+}
+
+el.form?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const fd = new FormData(form);
-  const { data: { user } } = await supa.auth.getUser();
-  await supa.from('prayers').insert([{
-    title: fd.get('title'), content: fd.get('content'), image_url: fd.get('image_url')||null,
-    created_by: user?.id
-  }]);
-  form.reset();
-  load();
+  const fd = new FormData(el.form);
+  const payload = {
+    title: fd.get('title')?.toString() || '',
+    content: fd.get('content')?.toString() || '',
+    image_url: fd.get('image_url')?.toString() || null,
+  };
+  const { error } = await supabase.from('prayers').insert(payload);
+  if (error) toast(error.message);
+  el.form.reset();
+  refresh();
 });
 
-load();
+el.filter?.addEventListener('change', refresh);
+
+refresh();
