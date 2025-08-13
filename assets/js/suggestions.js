@@ -130,3 +130,214 @@ el.genForm?.addEventListener('submit', async (e)=>{
   await renderLeader();
   await renderGeneral();
 })();
+// /js/suggestions.js
+/* global supabase */
+
+const form = document.getElementById('new-suggestion-form');
+const formStatus = document.getElementById('form-status');
+
+const teamBody = document.getElementById('team-body');
+const teamFilters = document.getElementById('team-status-filters');
+
+const leaderBody = document.getElementById('leader-body');
+const leaderFilters = document.getElementById('leader-status-filters');
+
+const generalForm = document.getElementById('general-form');
+const generalStatus = document.getElementById('general-status');
+const generalFeed = document.getElementById('general-feed');
+
+// Helper renderers
+function linkify(url, label) {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    return `<a href="${u.href}" target="_blank" rel="noopener">${label || u.hostname}</a>`;
+  } catch {
+    return '';
+  }
+}
+function fmtDate(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleString();
+}
+
+/* ---------------- Team Suggestions ---------------- */
+let teamFilter = 'all';
+
+async function loadTeam() {
+  teamBody.innerHTML = `<tr><td colspan="6" class="muted">Loading…</td></tr>`;
+  let q = supabase.from('suggestions_team').select('*').order('created_at', { ascending: false });
+
+  if (teamFilter !== 'all') q = q.eq('status', teamFilter);
+
+  const { data, error } = await q;
+  if (error) {
+    teamBody.innerHTML = `<tr><td colspan="6" class="muted">Error: ${error.message}</td></tr>`;
+    return;
+  }
+  if (!data || !data.length) {
+    teamBody.innerHTML = `<tr><td colspan="6" class="muted">No suggestions yet.</td></tr>`;
+    return;
+  }
+
+  teamBody.innerHTML = data.map(row => {
+    const r = row.resources || {};
+    const res = [
+      linkify(r.youtube, 'YouTube'),
+      linkify(r.audio, 'Audio'),
+      linkify(r.harmony, 'Harmony')
+    ].filter(Boolean).join(' • ');
+
+    const edited = row.edited_at ? ` <span class="muted">(edited)</span>` : '';
+    const sub = row.submitted_by ? `${row.submitted_by.slice(0,8)}…` : '—';
+    return `
+      <tr>
+        <td>${row.title || ''}</td>
+        <td>${row.key || ''}</td>
+        <td>${res || ''}</td>
+        <td>${row.status || ''}</td>
+        <td>${fmtDate(row.created_at)}<br><span class="muted">by ${sub}${edited}</span></td>
+        <td><button class="btn btn-sm" data-edit="${row.id}">Edit</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+teamFilters.addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  [...teamFilters.querySelectorAll('.chip')].forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  teamFilter = chip.dataset.status;
+  loadTeam();
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  formStatus.textContent = 'Saving…';
+
+  const fd = new FormData(form);
+  const title = fd.get('title')?.trim();
+  const key = (fd.get('key') || '').trim();
+  const resources = {
+    youtube: (fd.get('youtube') || '').trim(),
+    audio: (fd.get('audio_main') || '').trim(),
+    harmony: (fd.get('audio_harmony') || '').trim(),
+  };
+  const comments = (fd.get('comments') || '').trim();
+
+  const { data: user } = await supabase.auth.getUser();
+  const submitted_by = user?.user?.id || null;
+
+  const { error } = await supabase.from('suggestions_team').insert({
+    title,
+    key: key || null,
+    resources,
+    status: 'pending',
+    comments: comments || null,
+    submitted_by,
+  });
+
+  if (error) {
+    formStatus.textContent = 'Error: ' + error.message;
+    return;
+  }
+  form.reset();
+  formStatus.textContent = 'Saved!';
+  loadTeam();
+});
+
+/* ---------------- Leader Proposals ---------------- */
+let leaderFilter = 'all';
+
+async function loadLeader() {
+  leaderBody.innerHTML = `<tr><td colspan="5" class="muted">Loading…</td></tr>`;
+  let q = supabase.from('leader_proposals').select('*').order('created_at', { ascending: false });
+  if (leaderFilter !== 'all') q = q.eq('status', leaderFilter);
+  const { data, error } = await q;
+  if (error) {
+    leaderBody.innerHTML = `<tr><td colspan="5" class="muted">Error: ${error.message}</td></tr>`;
+    return;
+  }
+  if (!data || !data.length) {
+    leaderBody.innerHTML = `<tr><td colspan="5" class="muted">No leader proposals.</td></tr>`;
+    return;
+  }
+  leaderBody.innerHTML = data.map(row => {
+    const r = row.resources || {};
+    const res = [linkify(r.youtube,'YouTube'), linkify(r.audio,'Audio'), linkify(r.harmony,'Harmony')].filter(Boolean).join(' • ');
+    return `
+      <tr>
+        <td>${row.title || ''}</td>
+        <td>${row.key || ''}</td>
+        <td>${res || ''}</td>
+        <td>${row.status || ''}</td>
+        <td>${fmtDate(row.created_at)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+leaderFilters.addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  [...leaderFilters.querySelectorAll('.chip')].forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  leaderFilter = chip.dataset.status;
+  loadLeader();
+});
+
+/* ---------------- General Suggestions Feed ---------------- */
+async function loadGeneral() {
+  generalFeed.innerHTML = `<div class="muted">Loading…</div>`;
+  const { data, error } = await supabase
+    .from('general_suggestions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    generalFeed.innerHTML = `<div class="muted">Error: ${error.message}</div>`;
+    return;
+  }
+  if (!data || !data.length) {
+    generalFeed.innerHTML = `<div class="muted">No posts yet.</div>`;
+    return;
+  }
+
+  generalFeed.innerHTML = data.map(row => `
+    <div class="card pad" style="padding:.75rem;">
+      <div style="font-weight:600; color:#263839;">${row.title || ''}</div>
+      <div class="muted" style="font-size:.85rem; margin:.15rem 0 .4rem;">${fmtDate(row.created_at)}</div>
+      <div>${(row.content || '').replace(/\n/g,'<br>')}</div>
+    </div>
+  `).join('');
+}
+
+generalForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  generalStatus.textContent = 'Posting…';
+  const fd = new FormData(generalForm);
+  const title = fd.get('title')?.trim();
+  const content = (fd.get('content') || '').trim();
+  const { data: user } = await supabase.auth.getUser();
+  const submitted_by = user?.user?.id || null;
+
+  const { error } = await supabase.from('general_suggestions').insert({
+    title,
+    content,
+    submitted_by
+  });
+  if (error) {
+    generalStatus.textContent = 'Error: ' + error.message;
+    return;
+  }
+  generalForm.reset();
+  generalStatus.textContent = 'Posted!';
+  loadGeneral();
+});
+
+/* ---------------- Init ---------------- */
+loadTeam();
+loadLeader();
+loadGeneral();
