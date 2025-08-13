@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GENESIS Worship Initiative</title>
+<link rel="stylesheet" href="assets/css/styles.css" />
+<script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/js/env.js"></script>
+<script defer src="assets/js/app.js"></script>
+
+<script defer src="assets/js/song-index.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="banner">
+    <a class="brand" href="index.html">
+      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
+      <span class="brand-text">Genesis Worship Initiative</span>
+    </a>
+    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
+    <nav id="topmenu" class="menu hidden">
+      <a href="index.html">Home</a>
+      <a href="playlists.html">Playlists</a>
+      <a href="song-index.html">Songs List</a>
+      <a href="availability.html">Availability</a>
+      <a href="prayers.html">Prayer Wall</a>
+      <a href="suggestions.html">Suggestions</a>
+      <a href="profile.html">Profile</a>
+      <a class="admin-only" href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card glass">
+    <div class="card-header">
+      <h1>Songs List</h1>
+      <input id="songSearch" class="search" placeholder="Search song title..." />
+    </div>
+    <div class="table-responsive">
+      <table class="table" id="songsTable">
+        <thead>
+          <tr>
+            <th>Title</th><th>Key</th><th>BPM</th><th>YouTube</th><th>Audio H</th><th>Audio</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <button class="btn" id="prevPage">&larr; Prev</button>
+      <span id="pageInfo" class="muted"></span>
+      <button class="btn" id="nextPage">Next &rarr;</button>
+    </div>
+  </section>
+</main>
+<footer class="site-footer">
+  <small>© GWI</small>
+</footer>
+
+</body>
+</html>

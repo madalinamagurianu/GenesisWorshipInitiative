@@ -1,0 +1,3 @@
+// put your Supabase project values here
+window.__SUPABASE_URL__ = "https://jjqphteqyqjkathxmrrx.supabase.co";
+window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqcXBodGVxeXFqa2F0aHhtcnJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTE0NDYsImV4cCI6MjA3MDY2NzQ0Nn0.qRCVrh3MI0KmZZTrSGGshycIj7A5PywFlqIxqwcqBqw";

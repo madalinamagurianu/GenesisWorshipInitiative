@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GENESIS Worship Initiative</title>
+<link rel="stylesheet" href="assets/css/styles.css" />
+<script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/js/env.js"></script>
+<script defer src="assets/js/app.js"></script>
+
+<script defer src="assets/js/song.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="banner">
+    <a class="brand" href="index.html">
+      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
+      <span class="brand-text">Genesis Worship Initiative</span>
+    </a>
+    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
+    <nav id="topmenu" class="menu hidden">
+      <a href="index.html">Home</a>
+      <a href="playlists.html">Playlists</a>
+      <a href="song-index.html">Songs List</a>
+      <a href="availability.html">Availability</a>
+      <a href="prayers.html">Prayer Wall</a>
+      <a href="suggestions.html">Suggestions</a>
+      <a href="profile.html">Profile</a>
+      <a class="admin-only" href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card glass">
+    <div class="song-toolbar">
+      <div class="tools-left">
+        <button class="tool" data-tool="pencil" title="Pencil">✏️</button>
+        <button class="tool" data-tool="marker" title="Marker">🖊️</button>
+        <button class="tool" data-tool="highlighter" title="Highlighter">🖍️</button>
+        <select id="strokeWidth">
+          <option>Thin</option><option>Medium</option><option>Thick</option>
+        </select>
+        <input id="opacity" type="range" min="0.1" max="1" step="0.1" value="1" />
+        <button class="tool" data-tool="text" title="Text">T</button>
+        <input id="fontSize" type="number" min="10" max="64" value="16" />
+        <input id="fontColor" type="color" value="#263839" />
+        <button class="tool" id="symbolsBtn" title="Symbols">♪</button>
+        <button id="toggleNotes" class="btn subtle">Notes On/Off</button>
+      </div>
+      <div class="tools-right">
+        <button id="exportPdf" class="btn">Export PDF</button>
+        <div class="menu-dot">
+          <button id="moreBtn" class="btn subtle">…</button>
+          <div id="moreMenu" class="dropdown hidden">
+            <button id="shareNotes">Share Notes</button>
+            <button id="exportPdf2">Export PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h1 id="songTitle">Song</h1>
+    <div class="meta-row">
+      <span>BPM: <strong id="songBpm">—</strong></span>
+      <span>Key: <strong id="songKey">—</strong></span>
+      <a id="ytLink" class="icon" target="_blank" rel="noopener">
+        <img src="assets/images/youtube.svg" alt="YouTube" />
+      </a>
+      <a id="audioHLink" class="icon" target="_blank" rel="noopener">
+        <img src="assets/images/audio.svg" alt="Audio Harmony" />
+      </a>
+      <a id="audioLink" class="icon" target="_blank" rel="noopener">
+        <img src="assets/images/audio.svg" alt="Audio" />
+      </a>
+    </div>
+
+    <div id="scheduledNote" class="scheduled-note hidden"></div>
+
+    <div class="layout-sync">
+      <div class="left">
+        <label>Notation System
+          <select id="notationSystem">
+            <option value="international">International</option>
+            <option value="nashville">Nashville</option>
+          </select>
+        </label>
+        <label id="nashKeyWrap" class="hidden">Key (for Nashville)
+          <select id="nashKey">
+            <option>C</option><option>C#</option><option>D</option><option>Eb</option>
+            <option>E</option><option>F</option><option>F#</option><option>G</option>
+            <option>Ab</option><option>A</option><option>Bb</option><option>B</option>
+          </select>
+        </label>
+        <label>Layout
+          <select id="layoutMode">
+            <option value="lyrics_chords">Lyrics + Chords</option>
+            <option value="lyrics_only">Lyrics only</option>
+            <option value="cues">Cues</option>
+          </select>
+        </label>
+      </div>
+      <div class="right">
+        <div class="md-box">
+          <span>MD:</span> <span id="mdName" class="badge">—</span>
+          <label class="switch">
+            <input type="checkbox" id="followMd">
+            <span>Follow MD</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div id="songBody" class="song-body">
+      <!-- section bands + chord-over-lyrics will render here -->
+    </div>
+
+    <div class="meta-footer">
+      <div>File created by: <span id="createdBy">—</span></div>
+      <div>Date created: <span id="createdAt">—</span></div>
+      <div>Last updated: <span id="updatedAt">—</span></div>
+    </div>
+  </section>
+</main>
+<footer class="site-footer">
+  <small>© GWI</small>
+</footer>
+
+</body>
+</html>

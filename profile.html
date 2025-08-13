@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GENESIS Worship Initiative</title>
+<link rel="stylesheet" href="assets/css/styles.css" />
+<script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/js/env.js"></script>
+<script defer src="assets/js/app.js"></script>
+
+<script defer src="assets/js/profile.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="banner">
+    <a class="brand" href="index.html">
+      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
+      <span class="brand-text">Genesis Worship Initiative</span>
+    </a>
+    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
+    <nav id="topmenu" class="menu hidden">
+      <a href="index.html">Home</a>
+      <a href="playlists.html">Playlists</a>
+      <a href="song-index.html">Songs List</a>
+      <a href="availability.html">Availability</a>
+      <a href="prayers.html">Prayer Wall</a>
+      <a href="suggestions.html">Suggestions</a>
+      <a href="profile.html">Profile</a>
+      <a class="admin-only" href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card glass">
+    <h1>Profile</h1>
+    <form id="profileForm" class="stack">
+  <div class="grid-2">
+    <label>Display Name <input id="pfName" /></label>
+    <label>Email <input id="pfEmail" disabled /></label>
+  </div>
+  <div class="grid-3">
+    <label>Preferred Language
+      <select id="pfLang"><option value="ro">Română</option><option value="en">English</option></select>
+    </label>
+    <label>Bible Version <input id="pfBible" placeholder="NTR / ESV" /></label>
+    <label>Song Layout
+      <select id="pfLayout">
+        <option value="lyrics_chords">Lyrics + Chords</option>
+        <option value="lyrics_only">Lyrics only</option>
+        <option value="cues">Cues</option>
+      </select>
+    </label>
+  </div>
+  <button class="btn">Save</button>
+</form>
+
+  </section>
+</main>
+<footer class="site-footer">
+  <small>© GWI</small>
+</footer>
+
+</body>
+</html>

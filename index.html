@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GENESIS Worship Initiative</title>
+<link rel="stylesheet" href="assets/css/styles.css" />
+<script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="assets/js/env.js"></script>
+<script defer src="assets/js/app.js"></script>
+
+<script defer src="assets/js/dashboard.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="banner">
+    <a class="brand" href="index.html">
+      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
+      <span class="brand-text">Genesis Worship Initiative</span>
+    </a>
+    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
+    <nav id="topmenu" class="menu hidden">
+      <a href="index.html">Home</a>
+      <a href="playlists.html">Playlists</a>
+      <a href="song-index.html">Songs List</a>
+      <a href="availability.html">Availability</a>
+      <a href="prayers.html">Prayer Wall</a>
+      <a href="suggestions.html">Suggestions</a>
+      <a href="profile.html">Profile</a>
+      <a class="admin-only" href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card glass">
+    <h1 id="hello">Hello!</h1>
+    <div class="verse-wrap">
+      <div class="verse" id="verse">Verse of the day will appear here.</div>
+      <div class="version" id="verseVersion">NTR</div>
+    </div>
+  </section>
+
+  <section class="card glass">
+    <div class="card-header">
+      <h2>Upcoming Sunday Playlist</h2>
+      <div class="actions">
+        <a class="btn" href="playlists.html">Playlists</a>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table" id="dashPlaylistTable">
+        <thead>
+          <tr>
+            <th>Title</th><th>Key</th><th>BPM</th><th>Lead</th><th>Harmony</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="right">
+      <a class="btn" id="openPlaylistBtn" href="playlists.html">Open Playlist</a>
+    </div>
+  </section>
+
+  <section class="card glass next-holiday">
+    <strong>Next Holiday:</strong> <span id="nextHolidayName">—</span>
+    <span id="nextHolidayDate" class="muted">—</span>
+    <span id="nextHolidayCountdown" class="muted">—</span>
+  </section>
+
+  <section class="quick-actions">
+    <a class="btn" href="prayers.html">Prayer Wall</a>
+    <a class="btn" href="availability.html">Availability</a>
+    <a class="btn" href="suggestions.html">Suggestions</a>
+  </section>
+</main>
+<footer class="site-footer">
+  <small>© GWI</small>
+</footer>
+
+</body>
+</html>
