@@ -1,78 +1,175 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>GENESIS Worship Initiative</title>
-<link rel="stylesheet" href="assets/css/styles.css" />
-<script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script defer src="assets/js/env.js"></script>
-<script defer src="assets/js/app.js"></script>
-
-<script defer src="assets/js/suggestions.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GWI — Suggestions</title>
+  <link rel="icon" href="/assets/favicon.ico" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    /* Page-specific light tweaks; keep most in styles.css */
+    .page-banner { background: #2f5d6a; color: #fff; }
+    .card { background: rgba(255,255,255,0.85); backdrop-filter: blur(10px); border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
+    .chip { display:inline-block; padding:.25rem .6rem; border-radius:999px; font-size:.8rem; background:#eef3f4; color:#263839; margin-right:.4rem; cursor:pointer; }
+    .chip.active { background:#263839; color:#fff; }
+    .section-title { font-size:1.1rem; color:#263839; margin:0 0 .5rem; font-weight:600; }
+    table.sleek { width:100%; border-collapse:collapse; }
+    table.sleek th, table.sleek td { padding:.6rem .75rem; border-bottom:1px solid rgba(38,56,57,0.12); vertical-align:top; }
+    table.sleek th { text-align:left; font-weight:600; color:#263839; background:rgba(38,56,57,0.06); }
+    .btn { background:#263839; color:#fff; padding:.55rem .9rem; border-radius:10px; border:none; cursor:pointer; }
+    .btn:hover { background:#2f5d6a; }
+    .muted { color:#666; }
+    .row { display:grid; gap:1rem; }
+    @media(min-width: 960px){ .row-2 { grid-template-columns: 1.6fr 1fr; } }
+    .input, .select, .textarea { width:100%; padding:.55rem .7rem; border:1px solid rgba(38,56,57,0.2); border-radius:10px; background:#fff; }
+    .toolbar { display:flex; gap:.5rem; align-items:center; justify-content:space-between; }
+    .toolbar .filters { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
+    .kpi { font-weight:600; color:#263839; }
+  </style>
 </head>
-<body>
-<header class="site-header">
-  <div class="banner">
-    <a class="brand" href="index.html">
-      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
-      <span class="brand-text">Genesis Worship Initiative</span>
-    </a>
-    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
-    <nav id="topmenu" class="menu hidden">
-      <a href="index.html">Home</a>
-      <a href="playlists.html">Playlists</a>
-      <a href="song-index.html">Songs List</a>
-      <a href="availability.html">Availability</a>
-      <a href="prayers.html">Prayer Wall</a>
-      <a href="suggestions.html">Suggestions</a>
-      <a href="profile.html">Profile</a>
-      <a class="admin-only" href="admin.html">Admin</a>
-    </nav>
-  </div>
-</header>
+<body class="page">
+  <!-- Top Banner -->
+  <header class="page-banner">
+    <div class="container banner-inner">
+      <a href="/index.html" class="brand">
+        <img src="/assets/logo-white.svg" alt="GWI" height="28" />
+        <span class="brand-name">Genesis Worship Initiative</span>
+      </a>
+      <nav class="nav">
+        <a href="/index.html">Home</a>
+        <a href="/playlists.html">Playlists</a>
+        <a href="/songs.html">Songs List</a>
+        <a href="/availability.html">Availability</a>
+        <a class="active" href="/suggestions.html">Suggestions</a>
+        <a href="/prayer.html">Prayer Wall</a>
+        <a href="/profile.html">Profile</a>
+        <!-- Add Admin Panel link only if role=admin in other pages -->
+      </nav>
+    </div>
+  </header>
 
-<main class="container">
-  <section class="card glass">
+  <main class="container space-vertical">
     <h1>Suggestions</h1>
-    <h2>Propune un cântec nou</h2>
-<form id="suggForm" class="stack">
-  <input required id="sgTitle" placeholder="Title" />
-  <div class="grid-3">
-    <input id="sgYoutube" placeholder="YouTube URL" />
-    <input id="sgAudio" placeholder="Audio (main) URL" />
-    <input id="sgHarmony" placeholder="Audio Harmony URL" />
-  </div>
-  <input id="sgKey" placeholder="Key (optional)" />
-  <button class="btn">Submit</button>
-</form>
 
-<h3>Team Suggestions</h3>
-<table class="table" id="suggTable">
-  <thead><tr><th>Title</th><th>Key</th><th>Resources</th><th>Status</th><th>Comments</th><th>Submitted</th></tr></thead>
-  <tbody></tbody>
-</table>
-<form data-team-form>...</form>
-<select data-team-filter>...</select>
-<tbody data-team-body></tbody>
-<h3>Proposals</h3>
-<table class="table" id="leaderTable">
-  <thead><tr><th>Title</th><th>Key</th><th>Resources</th><th>Status</th><th>Date</th></tr></thead>
-  <tbody></tbody>
-</table>
-    <form data-lead-form>...</form>
-<tbody data-lead-body></tbody>
-    <form data-gen-form>...</form>
-<div data-gen-list></div>
-<script type="module" src="assets/js/suggestions.js"></script>
-<script type="module">
-  import './assets/js/supabaseClient.js';
-</script>
-  </section>
-</main>
-<footer class="site-footer">
-  <small>© GWI</small>
-</footer>
+    <!-- Top form: Propune un cântec nou -->
+    <section class="card pad">
+      <div class="section-title">Propune un cântec nou</div>
+      <form id="new-suggestion-form" class="row" autocomplete="off">
+        <div class="row" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <label>Title</label>
+            <input class="input" type="text" name="title" required placeholder="Ex: King of Kings" />
+          </div>
+          <div>
+            <label>Key (optional)</label>
+            <input class="input" type="text" name="key" placeholder="Ex: D" />
+          </div>
+        </div>
 
+        <div class="row" style="grid-template-columns: 1fr 1fr 1fr;">
+          <div>
+            <label>YouTube</label>
+            <input class="input" type="url" name="youtube" placeholder="https://youtube.com/..." />
+          </div>
+          <div>
+            <label>Audio (main)</label>
+            <input class="input" type="url" name="audio_main" placeholder="https://..." />
+          </div>
+          <div>
+            <label>Audio (harmony)</label>
+            <input class="input" type="url" name="audio_harmony" placeholder="https://..." />
+          </div>
+        </div>
+
+        <div>
+          <label>Comments</label>
+          <textarea class="textarea" name="comments" rows="3" placeholder="Note pentru echipă..."></textarea>
+        </div>
+
+        <div style="display:flex; gap:.6rem; align-items:center;">
+          <button class="btn" type="submit">Submit</button>
+          <span id="form-status" class="muted"></span>
+        </div>
+      </form>
+    </section>
+
+    <!-- Team Suggestions -->
+    <section class="card pad">
+      <div class="toolbar">
+        <div class="section-title">Team Suggestions</div>
+        <div class="filters" id="team-status-filters">
+          <span class="chip active" data-status="all">Toate</span>
+          <span class="chip" data-status="pending">În așteptare</span>
+          <span class="chip" data-status="in_progress">În lucru</span>
+          <span class="chip" data-status="finalized">Finalizat</span>
+          <span class="chip" data-status="rejected">Respins</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="sleek" id="team-table">
+          <thead>
+            <tr>
+              <th style="width:28%;">Title</th>
+              <th style="width:8%;">Key</th>
+              <th style="width:26%;">Resources</th>
+              <th style="width:12%;">Status</th>
+              <th style="width:16%;">Submitted</th>
+              <th style="width:10%;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="team-body">
+            <tr><td colspan="6" class="muted">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Two-column: Leader Proposals & General Suggestions -->
+    <section class="row row-2">
+      <!-- Leader Proposals -->
+      <div class="card pad">
+        <div class="toolbar">
+          <div class="section-title">Leader Proposed List</div>
+          <div class="filters" id="leader-status-filters">
+            <span class="chip active" data-status="all">Toate</span>
+            <span class="chip" data-status="pending">Pending</span>
+            <span class="chip" data-status="in_progress">In progress</span>
+            <span class="chip" data-status="finalized">Finalized</span>
+          </div>
+        </div>
+        <table class="sleek" id="leader-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Key</th>
+              <th>Resources</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="leader-body">
+            <tr><td colspan="5" class="muted">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- General Suggestions -->
+      <div class="card pad">
+        <div class="section-title">General Suggestions</div>
+        <form id="general-form" class="row" style="margin-bottom: .8rem;">
+          <input class="input" type="text" name="title" placeholder="Titlu" required />
+          <textarea class="textarea" name="content" rows="3" placeholder="Idee, îmbunătățire…"></textarea>
+          <div>
+            <button class="btn" type="submit">Post</button>
+            <span id="general-status" class="muted"></span>
+          </div>
+        </form>
+        <div id="general-feed" class="row"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/supabaseClient.js"></script>
+  <script src="/js/suggestions.js"></script>
 </body>
 </html>
