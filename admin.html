@@ -1,81 +1,279 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>GENESIS Worship Initiative</title>
-<link rel="stylesheet" href="assets/css/styles.css" />
-<script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script defer src="assets/js/env.js"></script>
-<script defer src="assets/js/app.js"></script>
-
-<script defer src="assets/js/admin.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Panel • Genesis Worship Initiative</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="icon" href="assets/favicon.ico">
+  <meta name="theme-color" content="#263839" />
+  <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script defer src="assets/js/env.js"></script>
+  <script defer src="assets/js/app.js"></script>
+  <!-- Admin uses data-* hooks consumed by assets/js/admin.js -->
 </head>
 <body>
-<header class="site-header">
-  <div class="banner">
-    <a class="brand" href="index.html">
-      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
-      <span class="brand-text">Genesis Worship Initiative</span>
-    </a>
-    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
-    <nav id="topmenu" class="menu hidden">
-      <a href="index.html">Home</a>
-      <a href="playlists.html">Playlists</a>
-      <a href="song-index.html">Songs List</a>
-      <a href="availability.html">Availability</a>
-      <a href="prayers.html">Prayer Wall</a>
-      <a href="suggestions.html">Suggestions</a>
-      <a href="profile.html">Profile</a>
-      <a class="admin-only" href="admin.html">Admin</a>
-    </nav>
-  </div>
-</header>
-<tbody data-users-body></tbody>
+  <header class="site-header">
+    <div class="site-header__left">
+      <a href="index.html" class="brand" aria-label="Genesis Worship Initiative">
+        <img src="assets/images/logo-white.png" alt="Genesis Worship Initiative" class="brand__logo" />
+        <span class="sr-only">Genesis Worship Initiative</span>
+      </a>
+    </div>
 
-<form data-hol-form>
-  <input name="name">
-  <input type="date" name="date">
-  <input name="service_time">
-  <button>Add Holiday</button>
-</form>
+    <div class="site-header__right">
+      <!-- Profile icon (desktop) -->
+      <a href="profile.html" id="profileIconBtn" class="icon-btn profile-btn" aria-label="Profile">
+        <svg class="profile-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 001 1h14a1 1 0 001-1v-1c0-2.761-3.582-5-8-5z"/>
+        </svg>
+      </a>
 
-<tbody data-hol-body></tbody>
-<main class="container">
-  <section class="card glass">
-    <h1>Admin Panel</h1>
-    <h2>Users & Roles</h2>
-<table class="table" id="usersTable">
-  <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Quick</th></tr></thead>
-  <tbody></tbody>
-</table>
+      <!-- Login button (hidden if logged in) -->
+      <button id="loginBtn" class="btn btn--outline">Login/Register</button>
 
-<h2>Holidays</h2>
-<form id="holForm" class="stack">
-  <div class="grid-3">
-    <input id="holName" placeholder="Name" />
-    <input id="holDate" type="date" />
-    <input id="holTime" type="time" />
-  </div>
-  <button class="btn">Add Holiday</button>
-</form>
-<table class="table" id="holidaysTable">
-  <thead><tr><th>Name</th><th>Date</th><th>Actions</th></tr></thead>
-  <tbody></tbody>
-</table>
+      <!-- Shown after login -->
+      <div id="userChip" class="user-chip hidden" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
+        <img id="userAvatar" alt="User avatar" class="user-chip__avatar"
+             src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24'><circle cx='12' cy='7' r='5' fill='%23ffffff'/><path d='M2 22c0-5.5 4.5-8 10-8s10 2.5 10 8' fill='%23ffffff'/></svg>"/>
+        <span id="userName" class="user-chip__name"></span>
+        <div id="userDropdown" class="menu menu--dropdown" role="menu">
+          <button id="logoutBtn" class="menu__item" role="menuitem">Logout</button>
+        </div>
+      </div>
 
-<h2>Notifications</h2>
-<button class="btn" id="tplPlaylistPublished">Playlist published…</button>
-<button class="btn" id="tplAvailability">Availability reminder…</button>
-<script type="module" src="assets/js/admin.js"></script>
-<script type="module">
-  import './assets/js/supabaseClient.js';
-</script>
+      <!-- Desktop nav -->
+      <nav class="topnav" aria-label="Primary">
+        <a href="index.html" class="btn btn--outline nav-link">Home</a>
+        <a href="playlists.html" class="btn btn--outline nav-link">Playlists</a>
+        <a href="song-index.html" class="btn btn--outline nav-link">Songs List</a>
+        <a href="availability.html" class="btn btn--outline nav-link">Availability</a>
+        <a href="prayers.html" class="btn btn--outline nav-link">Prayer Wall</a>
+        <a href="suggestions.html" class="btn btn--outline nav-link">Suggestions</a>
+      </nav>
+
+      <!-- Mobile hamburger -->
+      <button id="hamburger" aria-label="Toggle menu" aria-expanded="false" class="icon-btn">&#9776;</button>
+    </div>
+  </header>
+
+  <!-- Mobile menu -->
+  <nav id="topmenu" class="mobile-menu" aria-label="Primary mobile" aria-hidden="true">
+    <a href="index.html" class="mobile-menu__link">Home</a>
+    <a href="playlists.html" class="mobile-menu__link">Playlists</a>
+    <a href="song-index.html" class="mobile-menu__link">Songs List</a>
+    <a href="availability.html" class="mobile-menu__link">Availability</a>
+    <a href="prayers.html" class="mobile-menu__link">Prayer Wall</a>
+    <a href="suggestions.html" class="mobile-menu__link">Suggestions</a>
+  </nav>
+
+  <!-- Auth Modal (shared) -->
+  <dialog id="authModal" class="modal" aria-labelledby="authTitle">
+    <div class="modal-card">
+      <button id="authClose" class="modal-close" aria-label="Close">×</button>
+      <div class="tabs" role="tablist">
+        <button id="tabLogin" class="tab-btn btn btn--primary" role="tab" aria-controls="panelLogin" aria-selected="true">Login</button>
+        <button id="tabRegister" class="tab-btn btn btn--outline" role="tab" aria-controls="panelRegister" aria-selected="false">Register</button>
+      </div>
+      <div class="modal-body">
+        <section id="panelLogin" class="tab-content active" role="tabpanel" aria-labelledby="tabLogin">
+          <h2 class="auth-title">Login</h2>
+          <form id="loginForm" class="form stack gap-sm">
+            <label>Email<input type="email" id="loginEmail" required placeholder="you@example.com"></label>
+            <label>Password<input type="password" id="loginPassword" required placeholder="Your password"></label>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--lg">Login</button>
+            </div>
+          </form>
+        </section>
+        <section id="panelRegister" class="tab-content" role="tabpanel" aria-labelledby="tabRegister">
+          <h2 class="auth-title">Register</h2>
+          <form id="registerForm" class="form stack gap-sm">
+            <label>Name<input type="text" id="regName" required placeholder="Your full name"></label>
+            <label>Birthday<input type="date" id="regBirthday"></label>
+            <label>Email<input type="email" id="regEmail" required placeholder="you@example.com"></label>
+            <label>Password<input type="password" id="regPassword" required minlength="6" placeholder="Minimum 6 characters"></label>
+            <label>Confirm Password<input type="password" id="regPassword2" required placeholder="Re-enter password"></label>
+            <fieldset class="form__fieldset">
+              <legend>What instrument(s) do you play? (select all that apply)</legend>
+              <div class="checkbox-grid">
+                <label class="chk"><input type="checkbox" value="Piano" name="regInstruments"> Piano</label>
+                <label class="chk"><input type="checkbox" value="Acoustic Guitar" name="regInstruments"> Acoustic Guitar</label>
+                <label class="chk"><input type="checkbox" value="Electric Guitar" name="regInstruments"> Electric Guitar</label>
+                <label class="chk"><input type="checkbox" value="Drums" name="regInstruments"> Drums</label>
+                <label class="chk"><input type="checkbox" value="Bass" name="regInstruments"> Bass</label>
+                <label class="chk"><input type="checkbox" value="Other" name="regInstruments"> Other</label>
+              </div>
+            </fieldset>
+            <label>Do you sing?
+              <select id="regSings">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </label>
+            <label>Role
+              <select id="regRole">
+                <option value="member" selected>Member</option>
+                <option value="editor">Editor</option>
+                <option value="tech">Tech</option>
+                <option value="admin">Admin</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+              <label>Language
+                <select id="regLang">
+                  <option value="ro" selected>Română</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
+              <label>Default Layout
+                <select id="regLayout">
+                  <option value="lyrics_only">Lyrics only</option>
+                  <option value="lyrics_chords" selected>Lyrics + Chords</option>
+                  <option value="cues">Cues</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--lg">Create Account</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+  </dialog>
+  <style>
+    .auth-title{ text-align:center; font-weight:700; margin: .25rem 0 1rem; color:#203031; }
+    .form-actions{ display:flex; justify-content:center; margin-top: .25rem; }
+    .btn--lg{ font-size:1.05rem; padding:.8rem 1.25rem; border-radius:12px; }
+  </style>
+  <main class="container">
+  <h1>Admin Panel</h1>
+
+  <section class="card pad">
+    <h2>Users</h2>
+    <div class="toolbar row gap" role="group" aria-label="User filters">
+      <label class="visually-hidden" for="userSearch">Search users</label>
+      <input id="userSearch" type="search" placeholder="Search email…" class="input" data-users-search />
+      <label class="visually-hidden" for="userStatus">Status</label>
+      <select id="userStatus" class="input" data-active-only>
+        <option value="active">Active only</option>
+        <option value="all">All users</option>
+      </select>
+      <label class="visually-hidden" for="roleFilter">Role filter</label>
+      <select id="roleFilter" class="input" data-role-filter>
+        <option value="">Filter by role</option>
+        <option value="admin">Admin</option>
+        <option value="md">MD</option>
+        <option value="editor">Editor</option>
+        <option value="tech">Tech</option>
+        <option value="member">Member</option>
+        <option value="visitor">Visitor</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+    <table class="table users-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Access</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody data-users-body></tbody>
+    </table>
   </section>
-</main>
-<footer class="site-footer">
-  <small>© GWI</small>
-</footer>
 
+  <section class="card pad">
+    <h2>Holidays</h2>
+    <form data-hol-form class="row gap">
+      <label class="visually-hidden" for="holName">Holiday name</label>
+      <input type="text" id="holName" name="name" placeholder="Holiday name" required class="input" />
+      <label class="visually-hidden" for="holDate">Date</label>
+      <input type="date" id="holDate" name="date" required class="input" />
+      <label class="visually-hidden" for="holTime">Service time</label>
+      <input type="time" id="holTime" name="service_time" class="input" />
+      <button type="submit" class="btn btn-primary">Add Holiday</button>
+    </form>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Date & Time</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody data-hol-body></tbody>
+    </table>
+  </section>
+
+  <section class="card pad">
+    <h2>Notifications</h2>
+    <p class="muted">These send in-app notifications (you will be asked to confirm before sending).</p>
+    <div class="row gap">
+      <button id="tplPlaylistPublished" class="btn btn-primary">Send "Playlist Published"</button>
+      <button id="tplAvailability" class="btn btn-secondary">Send Availability Reminder</button>
+    </div>
+  </section>
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+  </main>
+  <script>
+    // Open auth modal helper
+    window.openAuthModal = function(){
+      const dlg = document.getElementById('authModal');
+      if(dlg && !dlg.open) dlg.showModal();
+      setActiveTab('login');
+    };
+    // Tabs logic
+    const tabLogin = document.getElementById('tabLogin');
+    const tabRegister = document.getElementById('tabRegister');
+    const panelLogin = document.getElementById('panelLogin');
+    const panelRegister = document.getElementById('panelRegister');
+    function setActiveTab(which){
+      const loginActive = which === 'login';
+      tabLogin.classList.toggle('active', loginActive);
+      tabRegister.classList.toggle('active', !loginActive);
+      tabLogin.classList.toggle('btn--primary', loginActive);
+      tabRegister.classList.toggle('btn--primary', !loginActive);
+      tabLogin.classList.toggle('btn--outline', !loginActive);
+      tabRegister.classList.toggle('btn--outline', loginActive);
+      panelLogin.classList.toggle('active', loginActive);
+      panelRegister.classList.toggle('active', !loginActive);
+      tabLogin.setAttribute('aria-selected', String(loginActive));
+      tabRegister.setAttribute('aria-selected', String(!loginActive));
+      panelLogin.hidden = !loginActive;
+      panelRegister.hidden = loginActive;
+    }
+    tabLogin?.addEventListener('click', ()=>setActiveTab('login'));
+    tabRegister?.addEventListener('click', ()=>setActiveTab('register'));
+    document.getElementById('authClose')?.addEventListener('click', ()=>{
+      const dlg = document.getElementById('authModal');
+      if(dlg?.open) dlg.close();
+    });
+    document.getElementById('loginBtn')?.addEventListener('click', ()=>{
+      try{ window.openAuthModal(); }catch(e){ console.error(e); }
+    });
+    // Hamburger
+    (function(){
+      const btn = document.getElementById('hamburger');
+      const menu = document.getElementById('topmenu');
+      if(btn && menu){
+        btn.addEventListener('click', function(){
+          const isOpen = menu.classList.toggle('open');
+          btn.setAttribute('aria-expanded', String(isOpen));
+          menu.setAttribute('aria-hidden', String(!isOpen));
+        });
+        menu.querySelectorAll('a').forEach(a=>a.addEventListener('click', ()=>{
+          menu.classList.remove('open');
+          btn.setAttribute('aria-expanded','false');
+          menu.setAttribute('aria-hidden','true');
+        }));
+      }
+    })();
+  </script>
+  <script type="module" src="assets/js/admin.js"></script>
 </body>
 </html>

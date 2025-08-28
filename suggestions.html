@@ -3,148 +3,288 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GWI — Suggestions</title>
-  <link rel="icon" href="/assets/favicon.ico" />
-  <link rel="stylesheet" href="/css/styles.css" />
+  <title>GENESIS Worship Initiative — Suggestions</title>
+  <meta name="description" content="GWI • Suggestions: propose songs, leader list, and general ideas." />
+  <link rel="icon" href="assets/favicon.ico" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script defer src="assets/js/env.js"></script>
+  <script defer src="assets/js/app.js"></script>
   <style>
-    /* Page-specific light tweaks; keep most in styles.css */
-    .page-banner { background: #2f5d6a; color: #fff; }
-    .card { background: rgba(255,255,255,0.85); backdrop-filter: blur(10px); border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
-    .chip { display:inline-block; padding:.25rem .6rem; border-radius:999px; font-size:.8rem; background:#eef3f4; color:#263839; margin-right:.4rem; cursor:pointer; }
-    .chip.active { background:#263839; color:#fff; }
-    .section-title { font-size:1.1rem; color:#263839; margin:0 0 .5rem; font-weight:600; }
-    table.sleek { width:100%; border-collapse:collapse; }
-    table.sleek th, table.sleek td { padding:.6rem .75rem; border-bottom:1px solid rgba(38,56,57,0.12); vertical-align:top; }
-    table.sleek th { text-align:left; font-weight:600; color:#263839; background:rgba(38,56,57,0.06); }
-    .btn { background:#263839; color:#fff; padding:.55rem .9rem; border-radius:10px; border:none; cursor:pointer; }
-    .btn:hover { background:#2f5d6a; }
-    .muted { color:#666; }
-    .row { display:grid; gap:1rem; }
-    @media(min-width: 960px){ .row-2 { grid-template-columns: 1.6fr 1fr; } }
-    .input, .select, .textarea { width:100%; padding:.55rem .7rem; border:1px solid rgba(38,56,57,0.2); border-radius:10px; background:#fff; }
-    .toolbar { display:flex; gap:.5rem; align-items:center; justify-content:space-between; }
-    .toolbar .filters { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
-    .kpi { font-weight:600; color:#263839; }
+    /* Modals for Suggestion forms */
+    dialog.modal-suggest { border:none; padding:0; background:transparent; }
+    dialog.modal-suggest::backdrop { background: rgba(38,56,57,0.55); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+    .modal-card.suggest{
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border:1px solid rgba(255,255,255,0.35);
+      box-shadow:0 20px 45px rgba(0,0,0,0.25);
+      border-radius:16px;
+      width:min(92vw,720px);
+      overflow:hidden;
+    }
+    .modal-card.suggest .header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.85rem 1rem; border-bottom:1px solid rgba(0,0,0,.08); background:rgba(255,255,255,.35);
+    }
+    .modal-card.suggest .header h3{ margin:0; font-size:1.15rem; letter-spacing:.2px; }
+    .modal-card.suggest .body{ padding:1rem; }
+    .modal-card.suggest .footer{ padding:.85rem 1rem; display:flex; gap:.5rem; justify-content:flex-end; border-top:1px solid rgba(0,0,0,.08); background:rgba(255,255,255,.35); }
+    .modal-close-x{ background:transparent; border:0; font-size:1.35rem; line-height:1; cursor:pointer; }
+    /* Visible brand text next to the logo (same as other pages) */
+    .brand__name{ color:#fff; font-weight:700; margin-left:.5rem; letter-spacing:.2px; white-space:nowrap; }
+
+    /* Frosted mobile menu (hamburger dropdown) to match site style */
+    .mobile-menu{
+      position:absolute;
+      top:64px; right:12px;
+      display:none; flex-direction:column; gap:.25rem;
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border:1px solid rgba(255,255,255,0.35);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+      border-radius:12px;
+      padding:.5rem;
+      z-index:9999;
+    }
+    .mobile-menu.open{ display:flex !important; }
+    .mobile-menu__link{
+      display:block; padding:.55rem .8rem; border-radius:10px; text-decoration:none;
+      color:#203031; font-weight:600; white-space:nowrap;
+    }
+    .mobile-menu__link:hover{ background:rgba(38,56,57,.12); }
+
+    /* Filter chips as toggle buttons */
+    .filters{ display:flex; gap:.4rem; flex-wrap:wrap; }
+    .filters .chip{
+      display:inline-block; padding:.35rem .65rem; border-radius:999px; cursor:pointer;
+      background:rgba(38,56,57,.08); color:#203031; font-weight:700; user-select:none;
+      border:1px solid rgba(0,0,0,.06);
+    }
+    .filters .chip.active{ background:rgba(38,56,57,.18); box-shadow: inset 0 0 0 2px rgba(38,56,57,.28); }
+
+    /* Section headings look like strong subtitles */
+    .section-title{
+      font-size:1.15rem; font-weight:800; letter-spacing:.2px; margin:.25rem 0 .5rem; color:#203031;
+    }
+    .toolbar{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap; }
+    /* Table tweaks */
+    .table-wrap{ overflow:auto; }
+    table.sleek{ width:100%; border-collapse:separate; border-spacing:0 .35rem; }
+    table.sleek th, table.sleek td{ padding:.55rem .6rem; background:rgba(255,255,255,.75); }
+    table.sleek th{ font-size:.9rem; color:#203031; opacity:.85; background:transparent; }
+    table.sleek tbody tr{ box-shadow:0 1px 0 rgba(0,0,0,.06); }
+    .title-cell{
+      max-width: 28ch;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient: vertical; overflow:hidden;
+      font-weight:700;
+    }
+    .icon-cell a{ display:inline-grid; place-items:center; width:28px; height:28px; border-radius:6px; background:rgba(38,56,57,.08); }
+    .icon-cell .disabled{ opacity:.45; }
+    .badge{ display:inline-block; padding:.2rem .45rem; border-radius:999px; background:rgba(38,56,57,.10); font-weight:700; }
+    @media (max-width: 720px){
+      .filters .chip{ padding:.4rem .7rem; font-size:.95rem; }
+      table.sleek th, table.sleek td{ padding:.5rem .5rem; }
+      .title-cell{ max-width: 22ch; }
+    }
   </style>
 </head>
-<body class="page">
-  <!-- Top Banner -->
-  <header class="page-banner">
-    <div class="container banner-inner">
-      <a href="/index.html" class="brand">
-        <img src="/assets/logo-white.svg" alt="GWI" height="28" />
-        <span class="brand-name">Genesis Worship Initiative</span>
-      </a>
-      <nav class="nav">
-        <a href="/index.html">Home</a>
-        <a href="/playlists.html">Playlists</a>
-        <a href="/songs.html">Songs List</a>
-        <a href="/availability.html">Availability</a>
-        <a class="active" href="/suggestions.html">Suggestions</a>
-        <a href="/prayer.html">Prayer Wall</a>
-        <a href="/profile.html">Profile</a>
-        <!-- Add Admin Panel link only if role=admin in other pages -->
-      </nav>
+<body>
+<header class="site-header">
+  <div class="site-header__left">
+    <a href="index.html" class="brand" aria-label="Genesis Worship Initiative">
+      <img src="assets/images/logo-white.png" alt="Genesis Worship Initiative" class="brand__logo" />
+      <span class="brand__name">Genesis Worship Initiative</span>
+    </a>
+  </div>
+
+  <div class="site-header__right">
+    <!-- Profile icon (desktop) -->
+    <a href="profile.html" id="profileIconBtn" class="icon-btn profile-btn" aria-label="Profile">
+      <svg class="profile-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 001 1h14a1 1 0 001-1v-1c0-2.761-3.582-5-8-5z"/>
+      </svg>
+    </a>
+
+    <!-- Login button (hidden if logged in) -->
+    <button id="loginBtn" class="btn btn--outline">Login/Register</button>
+
+    <!-- Shown after login -->
+    <div id="userChip" class="user-chip hidden" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
+      <img id="userAvatar" alt="User avatar" class="user-chip__avatar"
+           src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24'><circle cx='12' cy='7' r='5' fill='%23ffffff'/><path d='M2 22c0-5.5 4.5-8 10-8s10 2.5 10 8' fill='%23ffffff'/></svg>"/>
+      <span id="userName" class="user-chip__name"></span>
+      <div id="userDropdown" class="menu menu--dropdown" role="menu">
+        <button id="logoutBtn" class="menu__item" role="menuitem">Logout</button>
+      </div>
     </div>
-  </header>
+
+    <!-- Desktop nav -->
+    <nav class="topnav" aria-label="Primary">
+      <a href="index.html" class="btn btn--outline nav-link">Home</a>
+      <a href="playlists.html" class="btn btn--outline nav-link">Playlists</a>
+      <a href="song-index.html" class="btn btn--outline nav-link">Songs List</a>
+      <a href="availability.html" class="btn btn--outline nav-link">Availability</a>
+      <a href="prayers.html" class="btn btn--outline nav-link">Prayer Wall</a>
+      <a href="suggestions.html" class="btn btn--outline nav-link">Suggestions</a>
+    </nav>
+
+    <!-- Mobile hamburger -->
+    <button id="hamburger" aria-label="Toggle menu" aria-expanded="false" class="icon-btn">&#9776;</button>
+  </div>
+</header>
+
+<!-- Mobile menu -->
+<nav id="topmenu" class="mobile-menu" aria-label="Primary mobile" aria-hidden="true">
+  <a href="index.html" class="mobile-menu__link">Home</a>
+  <a href="playlists.html" class="mobile-menu__link">Playlists</a>
+  <a href="song-index.html" class="mobile-menu__link">Songs List</a>
+  <a href="availability.html" class="mobile-menu__link">Availability</a>
+  <a href="prayers.html" class="mobile-menu__link">Prayer Wall</a>
+  <a href="suggestions.html" class="mobile-menu__link">Suggestions</a>
+</nav>
+
+<!-- Auth Modal (shared) -->
+<dialog id="authModal" class="modal" aria-labelledby="authTitle">
+  <div class="modal-card">
+    <button id="authClose" class="modal-close" aria-label="Close">×</button>
+    <div class="tabs" role="tablist">
+      <button id="tabLogin" class="tab-btn btn btn--primary" role="tab" aria-controls="panelLogin" aria-selected="true">Login</button>
+      <button id="tabRegister" class="tab-btn btn btn--outline" role="tab" aria-controls="panelRegister" aria-selected="false">Register</button>
+    </div>
+    <div class="modal-body">
+      <section id="panelLogin" class="tab-content active" role="tabpanel" aria-labelledby="tabLogin">
+        <h2 class="auth-title">Login</h2>
+        <form id="loginForm" class="form stack gap-sm">
+          <label>Email<input type="email" id="loginEmail" required placeholder="you@example.com"></label>
+          <label>Password<input type="password" id="loginPassword" required placeholder="Your password"></label>
+          <div class="form-actions" style="text-align:center;">
+            <button type="submit" class="btn btn--primary btn--xl" style="max-width:220px; padding:.9rem 1.5rem; font-size:1.1rem; margin:auto; display:block;">Login</button>
+          </div>
+        </form>
+      </section>
+      <section id="panelRegister" class="tab-content" role="tabpanel" aria-labelledby="tabRegister">
+        <h2 class="auth-title">Register</h2>
+        <form id="registerForm" class="form stack gap-sm">
+          <label>Name<input type="text" id="regName" required placeholder="Your full name"></label>
+          <label>Birthday<input type="date" id="regBirthday"></label>
+          <label>Email<input type="email" id="regEmail" required placeholder="you@example.com"></label>
+          <label>Password<input type="password" id="regPassword" required minlength="6" placeholder="Minimum 6 characters"></label>
+          <label>Confirm Password<input type="password" id="regPassword2" required placeholder="Re-enter password"></label>
+          <fieldset class="form__fieldset">
+            <legend>What instrument(s) do you play? (select all that apply)</legend>
+            <div class="checkbox-grid">
+              <label class="chk"><input type="checkbox" value="Piano" name="regInstruments"> Piano</label>
+              <label class="chk"><input type="checkbox" value="Acoustic Guitar" name="regInstruments"> Acoustic Guitar</label>
+              <label class="chk"><input type="checkbox" value="Electric Guitar" name="regInstruments"> Electric Guitar</label>
+              <label class="chk"><input type="checkbox" value="Drums" name="regInstruments"> Drums</label>
+              <label class="chk"><input type="checkbox" value="Bass" name="regInstruments"> Bass</label>
+              <label class="chk"><input type="checkbox" value="Other" name="regInstruments"> Other</label>
+            </div>
+          </fieldset>
+          <label>Do you sing?
+            <select id="regSings">
+              <option value="">Select</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </label>
+          <label>Role
+            <select id="regRole">
+              <option value="member" selected>Member</option>
+              <option value="editor">Editor</option>
+              <option value="tech">Tech</option>
+              <option value="admin">Admin</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+            <label>Language
+              <select id="regLang">
+                <option value="ro" selected>Română</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+            <label>Default Layout
+              <select id="regLayout">
+                <option value="lyrics_only">Lyrics only</option>
+                <option value="lyrics_chords" selected>Lyrics + Chords</option>
+                <option value="cues">Cues</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-actions" style="text-align:center;">
+            <button type="submit" class="btn btn--primary btn--xl" style="max-width:220px; padding:.9rem 1.5rem; font-size:1.1rem; margin:auto; display:block;">Create Account</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+</dialog>
 
   <main class="container space-vertical">
     <h1>Suggestions</h1>
+    <div class="row" id="suggestion-quick-actions" style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; margin:.35rem 0 1rem;">
+      <button id="btnOpenSongSuggest" class="btn btn--primary">Song Suggestion</button>
+      <button id="btnOpenGeneralSuggest" class="btn btn--outline">General Suggestion</button>
+    </div>
 
-    <!-- Top form: Propune un cântec nou -->
-    <section class="card pad">
-      <div class="section-title">Propune un cântec nou</div>
-      <form id="new-suggestion-form" class="row" autocomplete="off">
-        <div class="row" style="grid-template-columns: 1fr 1fr;">
-          <div>
-            <label>Title</label>
-            <input class="input" type="text" name="title" required placeholder="Ex: King of Kings" />
-          </div>
-          <div>
-            <label>Key (optional)</label>
-            <input class="input" type="text" name="key" placeholder="Ex: D" />
-          </div>
-        </div>
-
-        <div class="row" style="grid-template-columns: 1fr 1fr 1fr;">
-          <div>
-            <label>YouTube</label>
-            <input class="input" type="url" name="youtube" placeholder="https://youtube.com/..." />
-          </div>
-          <div>
-            <label>Audio (main)</label>
-            <input class="input" type="url" name="audio_main" placeholder="https://..." />
-          </div>
-          <div>
-            <label>Audio (harmony)</label>
-            <input class="input" type="url" name="audio_harmony" placeholder="https://..." />
-          </div>
-        </div>
-
-        <div>
-          <label>Comments</label>
-          <textarea class="textarea" name="comments" rows="3" placeholder="Note pentru echipă..."></textarea>
-        </div>
-
-        <div style="display:flex; gap:.6rem; align-items:center;">
-          <button class="btn" type="submit">Submit</button>
-          <span id="form-status" class="muted"></span>
-        </div>
-      </form>
-    </section>
 
     <!-- Team Suggestions -->
     <section class="card pad">
       <div class="toolbar">
         <div class="section-title">Team Suggestions</div>
         <div class="filters" id="team-status-filters">
-          <span class="chip active" data-status="all">Toate</span>
-          <span class="chip" data-status="pending">În așteptare</span>
-          <span class="chip" data-status="in_progress">În lucru</span>
-          <span class="chip" data-status="finalized">Finalizat</span>
-          <span class="chip" data-status="rejected">Respins</span>
+          <span class="chip active" data-status="all">All</span>
+          <span class="chip" data-status="pending">Pending</span>
+          <span class="chip" data-status="in_progress">In Progress</span>
+          <span class="chip" data-status="finished">Finalized</span>
+          <span class="chip" data-status="rejected">Rejected</span>
         </div>
       </div>
       <div class="table-wrap">
         <table class="sleek" id="team-table">
           <thead>
             <tr>
+              <th style="width:14%;">User</th>
               <th style="width:28%;">Title</th>
               <th style="width:8%;">Key</th>
-              <th style="width:26%;">Resources</th>
+              <th style="width:14%;">YouTube</th>
+              <th style="width:12%;">Harmony</th>
               <th style="width:12%;">Status</th>
-              <th style="width:16%;">Submitted</th>
-              <th style="width:10%;">Actions</th>
+              <th style="width:12%;">Submitted</th>
             </tr>
           </thead>
           <tbody id="team-body">
-            <tr><td colspan="6" class="muted">Loading…</td></tr>
+            <tr><td colspan="7" class="muted">Loading…</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- Two-column: Leader Proposals & General Suggestions -->
+    <!-- Two-column: Leader Proposals -->
     <section class="row row-2">
       <!-- Leader Proposals -->
       <div class="card pad">
         <div class="toolbar">
-          <div class="section-title">Leader Proposed List</div>
+          <div class="section-title">Proposed List</div>
           <div class="filters" id="leader-status-filters">
-            <span class="chip active" data-status="all">Toate</span>
+            <span class="chip active" data-status="all">All</span>
             <span class="chip" data-status="pending">Pending</span>
             <span class="chip" data-status="in_progress">In progress</span>
-            <span class="chip" data-status="finalized">Finalized</span>
+            <span class="chip" data-status="finished">Finalized</span>
           </div>
         </div>
         <table class="sleek" id="leader-table">
           <thead>
             <tr>
-              <th>Title</th>
-              <th>Key</th>
-              <th>Resources</th>
-              <th>Status</th>
-              <th>Date</th>
+              <th style="width:38%;">Title</th>
+              <th style="width:12%;">Key</th>
+              <th style="width:18%;">YouTube</th>
+              <th style="width:16%;">Status</th>
+              <th style="width:16%;">Date</th>
             </tr>
           </thead>
           <tbody id="leader-body">
@@ -152,24 +292,219 @@
           </tbody>
         </table>
       </div>
-
-      <!-- General Suggestions -->
-      <div class="card pad">
-        <div class="section-title">General Suggestions</div>
-        <form id="general-form" class="row" style="margin-bottom: .8rem;">
-          <input class="input" type="text" name="title" placeholder="Titlu" required />
-          <textarea class="textarea" name="content" rows="3" placeholder="Idee, îmbunătățire…"></textarea>
-          <div>
-            <button class="btn" type="submit">Post</button>
-            <span id="general-status" class="muted"></span>
-          </div>
-        </form>
-        <div id="general-feed" class="row"></div>
-      </div>
     </section>
+  <!-- Song Suggestion Modal -->
+  <dialog id="dlgSongSuggest" class="modal-suggest" aria-labelledby="dlgSongTitle">
+    <div class="modal-card suggest">
+      <div class="header">
+        <h3 id="dlgSongTitle">New Song Suggestion</h3>
+        <button class="modal-close-x" data-close="dlgSongSuggest" aria-label="Close">×</button>
+      </div>
+      <div class="body">
+        <form id="formSongSuggest" class="form stack gap-sm" autocomplete="off">
+          <div class="row" style="grid-template-columns:1fr 160px;">
+            <label>Title
+              <input class="input" type="text" name="title" required placeholder="Ex: King of Kings" />
+            </label>
+            <label>Key (optional)
+              <input class="input" type="text" name="key" placeholder="Ex: D" />
+            </label>
+          </div>
+          <label>YouTube link
+            <input class="input" type="url" name="youtube" placeholder="https://youtube.com/..." />
+          </label>
+          <label>Comments
+            <textarea class="textarea" name="comments" rows="3" placeholder="Eg. For Christmas"></textarea>
+          </label>
+        </form>
+      </div>
+      <div class="footer">
+        <button class="btn btn--outline" data-close="dlgSongSuggest">Cancel</button>
+        <button class="btn btn--primary" id="submitSongSuggest" form="formSongSuggest" type="submit">Submit</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- General Suggestion Modal -->
+  <dialog id="dlgGeneralSuggest" class="modal-suggest" aria-labelledby="dlgGenTitle">
+    <div class="modal-card suggest">
+      <div class="header">
+        <h3 id="dlgGenTitle">New General Suggestion</h3>
+        <button class="modal-close-x" data-close="dlgGeneralSuggest" aria-label="Close">×</button>
+      </div>
+      <div class="body">
+        <form id="formGeneralSuggest" class="form stack gap-sm" autocomplete="off">
+          <label>Title
+            <input class="input" type="text" name="title" required placeholder="Short title" />
+          </label>
+          <label>Description
+            <textarea class="textarea" name="description" rows="4" placeholder="Describe your idea…"></textarea>
+          </label>
+          <label>Attach file
+            <input class="input" type="file" name="attachment" />
+          </label>
+        </form>
+      </div>
+      <div class="footer">
+        <button class="btn btn--outline" data-close="dlgGeneralSuggest">Cancel</button>
+        <button class="btn btn--primary" id="submitGeneralSuggest" form="formGeneralSuggest" type="submit">Submit</button>
+      </div>
+    </div>
+  </dialog>
   </main>
 
-  <script src="/js/supabaseClient.js"></script>
-  <script src="/js/suggestions.js"></script>
+  <footer class="site-footer" style="background:#263839;color:#fff;margin-top:2rem;">
+    <div class="container" style="text-align:center;padding:2rem 0;">
+      <h2 style="margin:0 0 .5rem;font-weight:700;letter-spacing:.3px;">Genesis Worship Initiative</h2>
+      <p style="margin:0 0 1rem;opacity:.9;">Equipping our team with songs, notes, and playlists.</p>
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,.25);max-width:92%;margin:0 auto 1rem;" />
+      <small style="opacity:.9;">© 2025 GWI • Built with love for the team ♡</small>
+    </div>
+  </footer>
+  <script src="assets/js/suggestions.js"></script>
+  <script>
+  // Open Auth modal
+  window.openAuthModal = function(){
+    const dlg = document.getElementById('authModal');
+    if(dlg && !dlg.open) dlg.showModal();
+    setActiveTab('login');
+  };
+  document.getElementById('loginBtn')?.addEventListener('click', ()=>openAuthModal());
+  document.getElementById('authClose')?.addEventListener('click', ()=>document.getElementById('authModal')?.close());
+
+  // Tabs
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+  const panelLogin = document.getElementById('panelLogin');
+  const panelRegister = document.getElementById('panelRegister');
+  function setActiveTab(which){
+    const loginActive = which === 'login';
+    tabLogin.classList.toggle('btn--primary', loginActive);
+    tabLogin.classList.toggle('btn--outline', !loginActive);
+    tabRegister.classList.toggle('btn--primary', !loginActive);
+    tabRegister.classList.toggle('btn--outline', loginActive);
+    panelLogin.classList.toggle('active', loginActive);
+    panelRegister.classList.toggle('active', !loginActive);
+    panelLogin.hidden = !loginActive;
+    panelRegister.hidden = loginActive;
+  }
+  tabLogin?.addEventListener('click', ()=>setActiveTab('login'));
+  tabRegister?.addEventListener('click', ()=>setActiveTab('register'));
+
+  // Hamburger
+  (function(){
+    const btn = document.getElementById('hamburger');
+    const menu = document.getElementById('topmenu');
+    if(!btn || !menu) return;
+
+    function setMenu(open){
+      menu.classList.toggle('open', open);
+      menu.setAttribute('aria-hidden', String(!open));
+      btn.setAttribute('aria-expanded', String(open));
+    }
+    setMenu(false);
+
+    btn.addEventListener('click', (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const willOpen = !menu.classList.contains('open');
+      setMenu(willOpen);
+    });
+
+    // Close on link click or outside click / Esc
+    menu.querySelectorAll('a').forEach(a=> a.addEventListener('click', ()=> setMenu(false)));
+    document.addEventListener('click', (e)=>{
+      if(!menu.classList.contains('open')) return;
+      if(e.target.closest('#topmenu') || e.target.closest('#hamburger')) return;
+      setMenu(false);
+    });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') setMenu(false); });
+    window.addEventListener('resize', ()=>{ if(window.innerWidth>=992) setMenu(false); });
+  })();
+
+  // ---- Filters for tables (Team & Leader) ----
+  (function(){
+    function attachFilters(containerId, tbodyId){
+      const wrap = document.getElementById(containerId);
+      const body = document.getElementById(tbodyId);
+      if(!wrap || !body) return;
+      wrap.addEventListener('click', (e)=>{
+        const chip = e.target.closest('.chip');
+        if(!chip) return;
+        // toggle active
+        wrap.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c===chip));
+        let want = chip.getAttribute('data-status') || 'all';
+        if(want === 'finalized') want = 'finished';
+        // Filter rows: expect each row rendered with data-status="<status>"
+        Array.from(body.querySelectorAll('tr')).forEach(row=>{
+          // keep header "Loading…" rows visible by default
+          if(row.querySelector('.muted')){ row.style.display=''; return; }
+          const st = row.getAttribute('data-status') || '';
+          row.style.display = (want==='all' || st===want) ? '' : 'none';
+        });
+      });
+    }
+    attachFilters('team-status-filters', 'team-body');
+    attachFilters('leader-status-filters', 'leader-body');
+  })();
+
+  // --- Quick action modals (open/close) + demo submit handlers ---
+  (function(){
+    const btnSong = document.getElementById('btnOpenSongSuggest');
+    const btnGen  = document.getElementById('btnOpenGeneralSuggest');
+    const dlgSong = document.getElementById('dlgSongSuggest');
+    const dlgGen  = document.getElementById('dlgGeneralSuggest');
+
+    function openDlg(d){ try{ if(d && !d.open) d.showModal(); }catch(_e){} }
+    function closeDlgById(id){
+      const d = document.getElementById(id);
+      if(d?.open) d.close();
+    }
+    document.querySelectorAll('[data-close]').forEach(b=>{
+      b.addEventListener('click', ()=> closeDlgById(b.getAttribute('data-close')));
+    });
+
+    btnSong?.addEventListener('click', ()=> openDlg(dlgSong));
+    btnGen?.addEventListener('click', ()=> openDlg(dlgGen));
+
+    // Demo-only: on submit, append to Team table; in real app, send to Supabase in suggestions.js
+    const teamBody = document.getElementById('team-body');
+
+    document.getElementById('formSongSuggest')?.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const fd = new FormData(e.currentTarget);
+      const now = new Date();
+      const tr = document.createElement('tr');
+      const yt = (fd.get('youtube')||'').toString().trim();
+      tr.setAttribute('data-status','pending');
+      tr.innerHTML = `
+        <td>You</td>
+        <td class="title-cell">${(fd.get('title')||'').toString().trim()}</td>
+        <td>${(fd.get('key')||'').toString().trim()}</td>
+        <td class="icon-cell">${yt ? `<a href="${yt}" target="_blank" rel="noopener" title="YouTube"><svg width="18" height="18"><use href="#ic-yt"/></svg></a>` : '<span class="disabled">—</span>'}</td>
+        <td class="icon-cell"><span class="disabled">—</span></td>
+        <td><span class="badge">Pending</span></td>
+        <td>${now.toLocaleDateString()}</td>
+      `;
+      // remove placeholder if present
+      const ph = teamBody?.querySelector('.muted')?.closest('tr');
+      if(ph) ph.remove();
+      teamBody?.appendChild(tr);
+      closeDlgById('dlgSongSuggest');
+      e.currentTarget.reset();
+    });
+
+    document.getElementById('formGeneralSuggest')?.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      // In the final integration this goes to a "general suggestions" feed.
+      closeDlgById('dlgGeneralSuggest');
+      e.currentTarget.reset();
+    });
+  })();
+</script>
 </body>
+</body>
+<svg style="display:none;">
+  <symbol id="ic-yt" viewBox="0 0 24 24"><path d="M10 8l6 4-6 4V8z"/><path d="M21.8 8.001a3 3 0 00-2.11-2.12C18 5.5 12 5.5 12 5.5s-6 0-7.69.38A3 3 0 002.2 8.001 31 31 0 002 12a31 31 0 00.2 4 3 3 0 002.11 2.12C6 18.5 12 18.5 12 18.5s6 0 7.69-.38a3 3 0 002.11-2.12c.13-1.33.2-2.66.2-4s-.07-2.67-.2-4z"/></symbol>
+  <symbol id="ic-note" viewBox="0 0 24 24"><path d="M9 3v12.26A3.5 3.5 0 106 18.5V8h9V3H9z"/></symbol>
+</svg>
 </html>

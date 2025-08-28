@@ -1,83 +1,850 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>GENESIS Worship Initiative</title>
-<link rel="stylesheet" href="assets/css/styles.css" />
-<script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script defer src="assets/js/env.js"></script>
-<script defer src="assets/js/app.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Genesis Worship Initiative</title>
 
-<script defer src="assets/js/dashboard.js"></script>
-</head>
+  <link rel="stylesheet" href="assets/css/styles.css?v=3" />
+  <style>
+    :root { --primary:#263839; --hover:#2f5d6a; --header-h:72px; }
+    .site-header{
+      background: var(--primary);
+      color:#fff; height: var(--header-h);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.5rem 1rem; position:sticky; top:0; z-index:1000;
+    }
+    .site-header__left,.site-header__right{ display:flex; align-items:center; gap:.35rem; }
+    /* === Auth actions: centered & compact === */
+    .form .row.form-actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: .85rem;
+      margin-top: 1.35rem;    /* more space from last input/fieldset */
+      margin-bottom: 1rem;
+    }
+    .form .row.form-actions .btn {
+      min-width: 148px;
+      width: auto;
+    }
+    .btn--auth{
+      font-size: 1.1rem;
+      padding: 0 .8rem;        /* horizontal padding only */
+      min-width: 180px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;           /* center content */
+      align-items: center;
+      justify-content: center;
+    }
+    /* Ensure comfortable spacing before actions regardless of last control type */
+    .form .input:last-of-type,
+    .form select:last-of-type,
+    .form textarea:last-of-type { margin-bottom: 1.1rem; }
+    .form .form__fieldset { margin-bottom: 1.1rem; }
+    #authModal .btn.btn--primary {
+      font-weight: 700 !important;
+    }
+    .brand__logo{ height:40px; display:block; }
+    .brand__name{ 
+      margin-left:.5rem; 
+      font-weight:800; 
+      letter-spacing:.02em; 
+      font-size:1.05rem; 
+      white-space:nowrap; 
+    }
+    .btn.btn--outline{
+      color:#fff; border:1px solid rgba(255,255,255,.6);
+      background:transparent; padding:.5rem 1rem; border-radius:999px; font-weight:700;
+    }
+    .btn.btn--outline:hover{ background:rgba(255,255,255,.12); }
+    /* Remove white contour on desktop nav items; keep login button style */
+    .topnav .btn.btn--outline{
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      padding: .45rem .75rem !important;
+    }
+    .topnav .btn.btn--outline:hover{
+      background: rgba(255,255,255,.12) !important;
+    }
+    .icon-btn{ background:none; border:none; color:#fff; font-size:1.6rem; padding:.25rem .5rem; border-radius:8px; cursor:pointer; }
+    .icon-btn:hover{ background:rgba(255,255,255,.12); }
+    .profile-btn{
+      display:flex; align-items:center; justify-content:center;
+      width:38px; height:38px;
+      border:none; background:transparent; box-shadow:none;
+      border-radius:50%;
+    }
+    .topnav{ display:none; gap:.5rem; }
+    @media (min-width:992px){
+      .topnav{ display:flex; }
+      #hamburger{ display:none; }
+      #topmenu{ display:none !important; }
+    }
+    .mobile-menu{
+      position:fixed; top:var(--header-h); right:1rem; display:none; flex-direction:column; gap:.25rem;
+      background:rgba(255,255,255,0.4); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,.35); border-radius:12px; padding:.5rem; min-width:240px;
+      box-shadow:0 8px 24px rgba(0,0,0,.15); z-index:1500;
+    }
+    .mobile-menu.open{ display:flex !important; }
+    .mobile-menu__link{ color:#111; text-decoration:none; font-weight:700; padding:.6rem .75rem; border-radius:8px; }
+    .mobile-menu__link:hover{ background:rgba(255,255,255,.6); }
+    .menu--dropdown{
+      position:absolute; top:100%; right:0; display:none; flex-direction:column; min-width:160px;
+      background:rgba(255,255,255,.4); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,.35); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.15); z-index:1100;
+    }
+    .menu--dropdown.open{ display:flex; }
+    .menu__item{ background:none; border:0; padding:.6rem .9rem; text-align:left; cursor:pointer; }
+    .hidden{ display:none !important; }
+    /* Flatten only the header Login/Register; keep nav links as pills */
+    #loginBtn{
+      border:none !important; background:transparent !important;
+      padding:0 .25rem !important; border-radius:6px !important; box-shadow:none !important;
+      font-weight:700;
+    }
+    #loginBtn:hover{ background:rgba(255,255,255,.12); }
+    /* Actions row under tables (right aligned) */
+    .actions.actions--table{
+      display:flex; 
+      justify-content:flex-end; 
+      padding:.5rem .5rem 0;
+    }
+    /* Placeholder rows while loading */
+    .skel-row td{
+      color:#6b7280; 
+      opacity:.65;
+    }
+
+    /* Center the bottom quick-action buttons and increase spacing above */
+    .quick-actions{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap: .75rem;                 /* space between buttons */
+      margin: 2.25rem auto 0;      /* bigger gap from previous card */
+      flex-wrap: wrap;             /* wrap nicely on small screens */
+      max-width: 900px;            /* keep them from stretching too wide */
+    }
+    .quick-actions .btn{ padding: .6rem 1rem; }
+
+    /* === Next Holiday row (single-row, clickable) === */
+    .next-holiday-card .holiday-row-link{ display:flex; align-items:center; justify-content:space-between; gap:2rem; padding:.85rem 1rem; border-radius:12px; text-decoration:none; color:inherit; }
+    .next-holiday-card .holiday-row-link:hover{ background:rgba(255,255,255,.6); }
+    .next-holiday-card .holiday-item{ display:flex; align-items:center; gap:.35rem; }
+    .next-holiday-card .label{ opacity:.75; font-weight:600; margin-right:.15rem; }
+    .next-holiday-card .value{ font-weight:700; }
+    @media (max-width:640px){ .next-holiday-card .holiday-row-link{ flex-wrap:wrap; gap:.6rem 1rem; } }
+
+    /* === Verse of the Day card === */
+    .verse{
+      margin: 0;
+      padding: 1rem 1.1rem;
+      background: rgba(255,255,255,0.45);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 14px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.12);
+      color: #203031;
+    }
+    .verse strong{ display:block; font-weight:800; letter-spacing:.01em; margin-bottom:.35rem; color:#263839; }
+    .verse #verse{ display:block; font-style: italic; font-size:1.05rem; line-height:1.5; }
+    .verse__ref{ display:inline-block; margin-left:.35rem; opacity:.85; }
+
+    /* ===== Footer (mirrors header style) ===== */
+    .site-footer{
+      background: var(--primary);
+      color:#fff;
+      margin-top: 2rem;
+    }
+    .site-footer a{ color:#fff; text-decoration: none; }
+    .site-footer a:hover{ text-decoration: underline; }
+
+    /* Ensure footer text is clearly visible and centered */
+    .site-footer .muted{ color: rgba(255,255,255,.92); opacity:1; }
+    .footer-inner.footer-simple{ text-align:center; justify-items:center; }
+    .footer-inner.footer-simple .footer-brand{ flex-direction:column; align-items:center; text-align:center; }
+    .footer-bottom small{ display:block; width:100%; text-align:center; }
+
+    .footer-inner{
+      max-width: var(--container-w, 1100px);
+      margin: 0 auto;
+      padding: 1.25rem 1rem;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 1rem 2rem;
+      align-items: start;
+    }
+    .footer-inner.footer-simple{
+      grid-template-columns: 1fr;
+      text-align: center;
+      justify-items: center;
+      padding: 1.25rem 1rem;
+    }
+    .footer-brand{ display:flex; align-items:center; gap:.65rem; }
+    .footer-brand .brand__logo{ height:32px; width:auto; }
+    .footer-brand .brand__name{ font-weight:800; letter-spacing:.02em; }
+
+    .footer-links ul{ list-style:none; margin:0; padding:0; display:grid; gap:.35rem; }
+    .footer-links h4{ margin:0 0 .5rem; font-size:1rem; opacity:.9; }
+
+    .footer-contact h4{ margin:0 0 .5rem; font-size:1rem; opacity:.9; }
+    .footer-contact .muted{ opacity:.85; }
+
+    .footer-bottom{
+      border-top: 1px solid rgba(255,255,255,.25);
+      padding: .75rem 1rem;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:.75rem; flex-wrap:wrap;
+    }
+    .footer-bottom small{ opacity:.9; }
+
+    @media (max-width: 900px){
+      .footer-inner{ grid-template-columns: 1fr; }
+    }
+
+    /* === Inserted new CSS for header, login/register, and nav links === */
+    :root{
+      --primary:#263839;   /* brand color */
+      --hover:#2f5d6a;
+      --header-h:72px;     /* header height */
+    }
+
+    .site-header{
+      background: var(--primary);
+      color:#fff;
+      height: var(--header-h);
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between;
+      padding:.5rem 1rem;
+      position:sticky; 
+      top:0; 
+      z-index:1000;
+    }
+
+    .brand__logo{ 
+      height:40px; 
+      display:block; 
+    }
+
+    /* Login/Register button */
+    #loginBtn{
+      color:#fff;
+      border:none !important;
+      background:transparent !important;
+      padding:0 .25rem !important;
+      border-radius:6px !important;
+      box-shadow:none !important;
+      font-weight:700;
+    }
+    #loginBtn:hover{ 
+      background:rgba(255,255,255,.12); 
+    }
+
+    /* Desktop nav links */
+    .topnav .btn.btn--outline{
+      color:#fff;
+      border:none !important;
+      background:transparent !important;
+      box-shadow:none !important;
+      padding:.45rem .75rem !important;
+      font-weight:700;
+    }
+    .topnav .btn.btn--outline:hover{
+      background:rgba(255,255,255,.12) !important;
+    }
+  </style>
+  <!-- Supabase SDK (UMD) so app.js can use window.supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <!-- Project keys & client bootstrap -->
+  <script defer src="assets/js/env.js"></script>
+  <style>
+    /* Auth modal refinements: close button, spacing, centered actions */
+    .modal-card { position: relative; }
+    .modal-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255,255,255,0.6);
+      border: none;
+      font-size: 20px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: #263839;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.8); }
+
+    /* --- Match song-index auth tabs/buttons look --- */
+    .tabs {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .75rem .75rem .25rem;
+    }
+    .tab-btn {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: .55rem 1.05rem;
+      font-weight: 700;
+      letter-spacing: .01em;
+      background: rgba(255,255,255,0.75);
+      color: var(--primary);
+      box-shadow: 0 3px 10px rgba(0,0,0,.12), inset 0 0 0 1px rgba(255,255,255,.65);
+      transition: background .15s ease, color .15s ease, transform .05s ease;
+    }
+    .tab-btn:hover { transform: translateY(-1px); }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(0,0,0,.22);
+    }
+
+    /* Inputs and selects spacing & visual harmony */
+    .form .input,
+    .form select,
+    .form textarea {
+      display: block;
+      width: 100%;
+      margin-bottom: .85rem;
+    }
+
+    .form__title {
+      text-align: center;
+      margin: .5rem 0 1rem;
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: var(--primary);
+      text-shadow: 0 1px 0 rgba(255,255,255,.55);
+    }
+
+    /* Even grid for instrument choices */
+    .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem 1rem; }
+    .chk { background: rgba(255,255,255,.55); border-radius: 12px; padding: .6rem .8rem; }
+
+    /* Backdrop in case the shared CSS isn't loaded yet */
+    dialog.modal::backdrop {
+      background: rgba(38,56,57,0.55);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+
+    .form__title { text-align: center; margin: .25rem 0 .85rem; }
+
+    .form .form__label { display: block; margin: .25rem 0 .35rem; }
+
+    /* Instrument checklist alignment */
+    .checkbox-grid { grid-template-columns: 1fr 1fr; gap: .5rem 1rem; }
+
+    /* Ensure only the active auth panel is visible */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+  </head>
+  
 <body>
-<header class="site-header">
-  <div class="banner">
-    <a class="brand" href="index.html">
-      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
-      <span class="brand-text">Genesis Worship Initiative</span>
+  <!-- Site Header -->
+  <header class="site-header">
+  <div class="site-header__left">
+    <a href="index.html" class="brand" aria-label="Genesis Worship Initiative">
+      <img src="assets/images/logo-white.png" alt="Genesis Worship Initiative" class="brand__logo" />
+      <span class="brand__name" aria-hidden="true">Genesis Worship Initiative</span>
+      <span class="sr-only">Genesis Worship Initiative</span>
     </a>
-    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
-    <nav id="topmenu" class="menu hidden">
-      <a href="index.html">Home</a>
-      <a href="playlists.html">Playlists</a>
-      <a href="song-index.html">Songs List</a>
-      <a href="availability.html">Availability</a>
-      <a href="prayers.html">Prayer Wall</a>
-      <a href="suggestions.html">Suggestions</a>
-      <a href="profile.html">Profile</a>
-      <a class="admin-only" href="admin.html">Admin</a>
-    </nav>
   </div>
-</header>
 
-<main class="container">
-  <section class="card glass">
-    <h1 id="hello">Hello!</h1>
-    <div class="verse-wrap">
-      <div class="verse" id="verse">Verse of the day will appear here.</div>
-      <div class="version" id="verseVersion">NTR</div>
-    </div>
-  </section>
+  <div class="site-header__right">
+    <!-- Profile icon (desktop) -->
+    <a href="profile.html" id="profileIconBtn" class="icon-btn profile-btn hidden" aria-label="Profile">
+      <svg class="profile-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 001 1h14a1 1 0 001-1v-1c0-2.761-3.582-5-8-5z"/>
+      </svg>
+    </a>
 
-  <section class="card glass">
-    <div class="card-header">
-      <h2>Upcoming Sunday Playlist</h2>
-      <div class="actions">
-        <a class="btn" href="playlists.html">Playlists</a>
+    <!-- Login button (hidden if logged in) -->
+    <button id="loginBtn" class="btn btn--outline">Login/Register</button>
+
+    <!-- Shown after login -->
+    <div id="userChip" class="user-chip hidden" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
+      <img id="userAvatar" alt="User avatar" class="user-chip__avatar"
+           src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24'><circle cx='12' cy='7' r='5' fill='%23ffffff'/><path d='M2 22c0-5.5 4.5-8 10-8s10 2.5 10 8' fill='%23ffffff'/></svg>"/>
+      <span id="userName" class="user-chip__name"></span>
+      <div id="userDropdown" class="menu menu--dropdown" role="menu">
+        <button id="logoutBtn" class="menu__item" role="menuitem">Logout</button>
       </div>
     </div>
-    <div class="table-responsive">
-      <table class="table" id="dashPlaylistTable">
-        <thead>
-          <tr>
-            <th>Title</th><th>Key</th><th>BPM</th><th>Lead</th><th>Harmony</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+
+    <!-- Desktop nav -->
+    <nav class="topnav" aria-label="Primary">
+      <a href="index.html" class="btn btn--outline nav-link">Home</a>
+      <a href="playlists.html" class="btn btn--outline nav-link">Playlists</a>
+      <a href="song-index.html" class="btn btn--outline nav-link">Songs List</a>
+      <a href="availability.html" class="btn btn--outline nav-link">Availability</a>
+      <a href="prayers.html" class="btn btn--outline nav-link">Prayer Wall</a>
+      <a href="suggestions.html" class="btn btn--outline nav-link">Suggestions</a>
+    </nav>
+
+    <!-- Mobile hamburger -->
+    <button id="hamburger" aria-label="Toggle menu" aria-expanded="false" class="icon-btn">&#9776;</button>
+  </div>
+</header>
+<!-- Mobile menu -->
+<nav id="topmenu" class="mobile-menu" aria-label="Primary mobile" aria-hidden="true">
+  <a href="index.html" class="mobile-menu__link">Home</a>
+  <a href="playlists.html" class="mobile-menu__link">Playlists</a>
+  <a href="song-index.html" class="mobile-menu__link">Songs List</a>
+  <a href="availability.html" class="mobile-menu__link">Availability</a>
+  <a href="prayers.html" class="mobile-menu__link">Prayer Wall</a>
+  <a href="suggestions.html" class="mobile-menu__link">Suggestions</a>
+</nav>
+
+
+  <main class="container">
+    <!-- Greeting + Verse -->
+    <section class="stack gap-md">
+      <h2 id="hello" class="page-title">Hello, friend!</h2>
+      <blockquote class="verse">
+        <strong>Verse of the Day:</strong>
+        <span id="verse">—</span>
+        <small id="verseRef" class="verse__ref">—</small>
+        <small id="verseVersion" class="verse__ref">—</small>
+      </blockquote>
+    </section>
+
+    <!-- Upcoming Sunday -->
+    <section class="stack gap-sm" id="upcomingSunday">
+      <div class="section-head">
+        <h3 id="upcomingSundayTitle" class="section-title">Upcoming Sunday Playlist</h3>
+      </div>
+
+      <div class="card">
+        <table id="dashPlaylistTable" class="table table--brand">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Key</th>
+              <th>BPM</th>
+              <th>Lead</th>
+              <th>Harmony</th>
+            </tr>
+            </thead>
+            <tbody id="dashPlaylistBody"></tbody>
+        </table>
+
+        <div class="actions actions--table">
+          <a href="playlists.html" class="btn btn--primary btn--sm">Playlists &raquo;&raquo;</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Next Holiday -->
+    <section class="stack gap-sm" id="nextHoliday">
+      <h3 class="section-title">Next Holiday</h3>
+      <div class="card next-holiday-card">
+        <a id="nextHolidayLink" href="playlists.html" class="holiday-row-link" aria-label="Open holiday playlist">
+          <span class="holiday-item"><span class="label">Holiday:</span><span id="nextHolidayName" class="value">—</span></span>
+          <span class="holiday-item"><span class="label">Date:</span><span id="nextHolidayDate" class="value">—</span></span>
+          <span class="holiday-item"><span class="label">Countdown:</span><span id="nextHolidayCountdown" class="value">—</span></span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Bottom quick actions -->
+    <section class="quick-actions">
+      <a href="prayers.html" class="btn btn--primary">Prayer Wall</a>
+      <a href="availability.html" class="btn btn--primary">Availability</a>
+      <a href="suggestions.html" class="btn btn--primary">Suggestions</a>
+    </section>
+  </main>
+
+  <dialog id="authModal" class="modal">
+    <div class="modal-card">
+      <button class="modal-close" data-close-modal aria-label="Close">×</button>
+      <div class="tabs" role="tablist" aria-label="Authentication tabs">
+        <button class="tab-btn active" data-tab="loginForm" role="tab" aria-selected="true" aria-controls="loginForm">Login</button>
+        <button class="tab-btn" data-tab="registerForm" role="tab" aria-selected="false" aria-controls="registerForm">Register</button>
+      </div>
+      <div class="modal-body">
+        <!-- LOGIN FORM -->
+        <form id="loginForm" class="form tab-content active" novalidate>
+          <h2 class="form__title">Login</h2>
+          <label for="loginEmail" class="form__label">Email</label>
+          <input type="email" id="loginEmail" name="email" required class="input" placeholder="you@example.com" />
+
+          <label for="loginPassword" class="form__label">Password</label>
+          <input type="password" id="loginPassword" name="password" required class="input" placeholder="Your password" />
+
+          <div class="row form-actions">
+            <button type="submit" class="btn btn--primary btn--auth">Login</button>
+          </div>
+          <p id="loginMsg" class="form__msg" aria-live="polite"></p>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="registerForm" class="form tab-content" novalidate>
+          <h2 class="form__title">Register</h2>
+
+          <label for="regName" class="form__label">Name</label>
+          <input type="text" id="regName" name="name" required class="input" placeholder="Your full name" />
+
+          <label for="regBirthday" class="form__label">Birthday</label>
+          <input type="date" id="regBirthday" name="birthday" required class="input" />
+
+          <label for="regEmail" class="form__label">Email</label>
+          <input type="email" id="regEmail" name="email" required class="input" placeholder="you@example.com" />
+
+          <label for="regPassword" class="form__label">Password</label>
+          <input type="password" id="regPassword" name="password" required minlength="6" class="input" placeholder="Minimum 6 characters" />
+
+          <label for="regPasswordConfirm" class="form__label">Confirm Password</label>
+          <input type="password" id="regPasswordConfirm" required class="input" placeholder="Re-enter password" />
+
+          <fieldset class="form__fieldset">
+            <legend class="form__label">What instrument(s) do you play? (select all that apply)</legend>
+            <div class="checkbox-grid">
+              <label class="chk"><input type="checkbox" name="instruments" value="Piano"> Piano</label>
+              <label class="chk"><input type="checkbox" name="instruments" value="Acoustic Guitar"> Acoustic Guitar</label>
+              <label class="chk"><input type="checkbox" name="instruments" value="Electric Guitar"> Electric Guitar</label>
+              <label class="chk"><input type="checkbox" name="instruments" value="Drums"> Drums</label>
+              <label class="chk"><input type="checkbox" name="instruments" value="Bass"> Bass</label>
+              <label class="chk"><input type="checkbox" name="instruments" value="Other"> Other</label>
+            </div>
+          </fieldset>
+
+          <label for="regSing" class="form__label">Do you sing?</label>
+          <select id="regSing" class="input">
+            <option value="">Select</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+
+          <label for="regRole" class="form__label">Role</label>
+          <select id="regRole" class="input">
+            <option value="member" selected>Member</option>
+            <option value="editor">Editor</option>
+            <option value="tech">Tech</option>
+            <option value="admin">Admin</option>
+            <option value="other">Other</option>
+          </select>
+
+          <div class="row">
+            <div>
+              <label for="regLanguage" class="form__label">Language</label>
+              <select id="regLanguage" class="input">
+                <option value="ro" selected>Română</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <div>
+              <label for="regLayout" class="form__label">Default Layout</label>
+              <select id="regLayout" class="input">
+                <option value="lyrics_chords" selected>Lyrics + Chords</option>
+                <option value="lyrics_only">Lyrics only</option>
+                <option value="cues">Cues</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row form-actions">
+            <button type="submit" class="btn btn--primary btn--auth">Create Account</button>
+          </div>
+          <p id="registerMsg" class="form__msg" aria-live="polite"></p>
+        </form>
+      </div>
     </div>
-    <div class="right">
-      <a class="btn" id="openPlaylistBtn" href="playlists.html">Open Playlist</a>
+  </dialog>
+
+  <script src="assets/js/app.js" defer></script>
+  <script>
+(function bindHamburger(){
+  const burger = document.getElementById('hamburger');
+  const menu   = document.getElementById('topmenu');
+  if(!burger || !menu) return;
+
+  let isOpen = false;
+  function setMenu(open){
+    isOpen = open;
+    menu.classList.toggle('open', isOpen);
+    menu.style.display = isOpen ? 'flex' : 'none';
+    menu.setAttribute('aria-hidden', String(!isOpen));
+    burger.setAttribute('aria-expanded', String(isOpen));
+  }
+  // start closed
+  setMenu(false);
+
+  // Toggle on burger click
+  burger.addEventListener('click', (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    setMenu(!isOpen);
+  });
+
+  // Close when clicking inside the menu (anywhere, including links)
+  menu.addEventListener('click', ()=>{
+    setMenu(false);
+  });
+
+  // Close on outside click
+  document.addEventListener('click', (e)=>{
+    if(!isOpen) return;
+    if(e.target.closest('#topmenu') || e.target.closest('#hamburger')) return;
+    setMenu(false);
+  });
+
+  // Close on ESC
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape') setMenu(false);
+  });
+
+  // Close when resizing to desktop
+  window.addEventListener('resize', ()=>{
+    if(window.innerWidth >= 992){ setMenu(false); }
+  });
+})();
+</script>
+  <script>
+    (function(){
+      // Supabase client is loaded globally by the CDN tag in &lt;head&gt; and initialized in assets/js/app.js.
+      const sb = window.supabase || null;
+      const loginBtn = document.getElementById('loginBtn');
+      const profileIconBtn = document.getElementById('profileIconBtn');
+      const userChip = document.getElementById('userChip');
+
+      // Strict default: show login; hide profile & chip until auth state is known
+      if (loginBtn) loginBtn.classList.remove('hidden');
+      if (profileIconBtn) profileIconBtn.classList.add('hidden');
+      if (userChip) userChip.classList.add('hidden');
+
+      function reflectAuth(session){
+        const loggedIn = !!(session && session.user);
+        if (loginBtn)       loginBtn.classList.toggle('hidden', loggedIn);
+        if (profileIconBtn) profileIconBtn.classList.toggle('hidden', !loggedIn);
+        if (userChip)       userChip.classList.toggle('hidden', !loggedIn);
+      }
+
+      async function initAuthState(){
+        try{
+          if(!sb) return;
+          const { data:{ session } } = await sb.auth.getSession();
+          reflectAuth(session);
+          sb.auth.onAuthStateChange((_evt, newSession) => reflectAuth(newSession));
+        }catch(_e){
+          // fail safe: show login
+          if (loginBtn) loginBtn.classList.remove('hidden');
+          if (profileIconBtn) profileIconBtn.style.display = 'none';
+        }
+      }
+
+      // Ensure modal tabs are mutually exclusive on any page load
+      function enforceAuthTabs(){
+        const tabLogin = document.getElementById('tabLogin') || document.querySelector('[data-tab="loginForm"]');
+        const tabRegister = document.getElementById('tabRegister') || document.querySelector('[data-tab="registerForm"]');
+        const panelLogin = document.getElementById('panelLogin') || document.getElementById('loginForm');
+        const panelRegister = document.getElementById('panelRegister') || document.getElementById('registerForm');
+
+        function setActive(which){
+          const loginActive = which === 'login';
+          if (tabLogin) {
+            tabLogin.classList.toggle('active', loginActive);
+            tabLogin.setAttribute('aria-selected', String(loginActive));
+            tabLogin.classList.toggle('btn--primary', loginActive);
+            tabLogin.classList.toggle('btn--outline', !loginActive);
+          }
+          if (tabRegister) {
+            tabRegister.classList.toggle('active', !loginActive);
+            tabRegister.setAttribute('aria-selected', String(!loginActive));
+            tabRegister.classList.toggle('btn--primary', !loginActive);
+            tabRegister.classList.toggle('btn--outline', loginActive);
+          }
+          if (panelLogin) {
+            panelLogin.classList.toggle('active', loginActive);
+            panelLogin.hidden = !loginActive;
+            panelLogin.setAttribute('aria-hidden', String(!loginActive));
+          }
+          if (panelRegister) {
+            panelRegister.classList.toggle('active', !loginActive);
+            panelRegister.hidden = loginActive;
+            panelRegister.setAttribute('aria-hidden', String(loginActive));
+          }
+        }
+
+        // Default to Login on page load
+        setActive('login');
+
+        // Wire click handlers if present
+        tabLogin && tabLogin.addEventListener('click', () => setActive('login'));
+        tabRegister && tabRegister.addEventListener('click', () => setActive('register'));
+
+        // Also re-enforce when the modal is opened via button
+        const authModal = document.getElementById('authModal');
+        const openAuth = document.getElementById('loginBtn');
+        if (authModal && openAuth) {
+          openAuth.addEventListener('click', () => {
+            // slight delay so dialog paints before we flip panels
+            setTimeout(() => setActive('login'), 0);
+          });
+        }
+      }
+
+      enforceAuthTabs();
+      initAuthState();
+      // Wire Login/Register button to toggle the modal (open/close)
+      (function(){
+        const btn = document.getElementById('loginBtn');
+        const dlg = document.getElementById('authModal');
+        if(btn && dlg){
+          btn.addEventListener('click', (e)=>{
+            e.preventDefault();
+            if(dlg.open){
+              dlg.close();
+            }else{
+              try{ window.openAuthModal ? window.openAuthModal() : dlg.showModal(); }catch(err){ dlg.showModal(); }
+            }
+          });
+        }
+      })();
+    })();
+  </script>
+
+  <script>
+    // Close when clicking the dimmed backdrop (outside the card)
+    (function(){
+      const dlg = document.getElementById('authModal');
+      if(dlg){
+        dlg.addEventListener('click', (ev)=>{
+          // If the click is directly on the <dialog> (backdrop), not inside .modal-card
+          if(ev.target === dlg){
+            dlg.close();
+          }
+        });
+      }
+    })();
+  </script>
+  <script>
+    (function bindAuthModalClose(){
+      const dlg = document.getElementById('authModal');
+      if(!dlg) return;
+      // Close when the explicit X is clicked
+      document.querySelectorAll('[data-close-modal], .modal-close').forEach(btn => {
+        btn.addEventListener('click', (ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          if(dlg.open) dlg.close();
+        });
+      });
+      // Defensive: prevent clicks inside the card from closing
+      dlg.querySelector('.modal-card')?.addEventListener('click', (ev)=>ev.stopPropagation());
+    })();
+  </script>
+  <script>
+    (function dailyVerseLocal(){
+      const verseEl = document.getElementById('verse');
+      const refEl   = document.getElementById('verseRef');
+      const verEl   = document.getElementById('verseVersion');
+      if(!verseEl) return;
+
+      // Local rotating pool (edit/extend as you like)
+      const pool = [
+        { text: "Domnul este Păstorul meu; nu voi duce lipsă de nimic.", ref: "Psalmii 23:1", version: "NTR" },
+        { text: "Fiindcă atât de mult a iubit Dumnezeu lumea, încât L-a dat pe singurul Său Fiu...", ref: "Ioan 3:16", version: "NTR" },
+        { text: "Aruncați asupra Lui toate îngrijorările voastre, căci El Însuși îngrijește de voi.", ref: "1 Petru 5:7", version: "NTR" },
+        { text: "Pot totul în Hristos care mă întărește.", ref: "Filipeni 4:13", version: "NTR" },
+        { text: "Încrede-te în Domnul din toată inima ta și nu te bizui pe înțelepciunea ta.", ref: "Proverbe 3:5", version: "NTR" },
+        { text: "Domnul este tăria și scutul meu; în El se încrede inima mea.", ref: "Psalmii 28:7", version: "NTR" },
+        { text: "Căci Eu știu planurile pe care le am cu privire la voi, zice Domnul...", ref: "Ieremia 29:11", version: "NTR" },
+        { text: "Gustați și vedeți ce bun este Domnul!", ref: "Psalmii 34:8", version: "NTR" },
+        { text: "Căutați mai întâi Împărăția lui Dumnezeu și dreptatea Lui...", ref: "Matei 6:33", version: "NTR" },
+        { text: "Domnul este aproape de toți cei ce-L cheamă.", ref: "Psalmii 145:18", version: "NTR" }
+      ];
+
+      const daysSinceEpoch = Math.floor(Date.now() / 86400000);
+      const pick = pool[daysSinceEpoch % pool.length];
+
+      verseEl.textContent = `“${pick.text}”`;
+      if(refEl) refEl.textContent = `— ${pick.ref}`;
+      if(verEl) verEl.textContent = pick.version;
+    })();
+  </script>
+
+  <!-- Footer -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-inner footer-simple">
+      <div class="footer-brand">
+        <h3 class="brand__name" style="margin:0;">Genesis Worship Initiative</h3>
+        <p class="muted" style="margin:.35rem 0 0;">Equipping our team with songs, notes, and playlists.</p>
+      </div>
     </div>
-  </section>
+    <div class="footer-bottom">
+      <small>© 2025 GWI • Built with love for the team ♡</small>
+    </div>
+  </footer>
 
-  <section class="card glass next-holiday">
-    <strong>Next Holiday:</strong> <span id="nextHolidayName">—</span>
-    <span id="nextHolidayDate" class="muted">—</span>
-    <span id="nextHolidayCountdown" class="muted">—</span>
-  </section>
+  <script>
+    // Helper for app.js or Supabase loaders to set the destination dynamically
+    // Usage: window.updateNextHoliday({ playlist_id, holiday_id, playlist_slug })
+    window.updateNextHoliday = function({playlist_id, holiday_id, playlist_slug}={}){
+      const link = document.getElementById('nextHolidayLink');
+      if(!link) return;
+      let url = 'playlists.html';
+      if (playlist_slug) url += `?p=${encodeURIComponent(playlist_slug)}`;
+      else if (playlist_id) url += `?playlist=${encodeURIComponent(playlist_id)}`;
+      else if (holiday_id) url += `?holiday=${encodeURIComponent(holiday_id)}`;
+      link.href = url;
+    };
+  </script>
 
-  <section class="quick-actions">
-    <a class="btn" href="prayers.html">Prayer Wall</a>
-    <a class="btn" href="availability.html">Availability</a>
-    <a class="btn" href="suggestions.html">Suggestions</a>
-  </section>
-</main>
-<footer class="site-footer">
-  <small>© GWI</small>
-</footer>
-
-</body>
+  <!-- Move placeholder and renderSundayPlaylist scripts here before </body> -->
+  <script>
+    // Seed up to 6 placeholder rows; real data can overwrite via your loaders
+    (function seedSundayPlaceholders(){
+      const body = document.getElementById('dashPlaylistBody');
+      if(!body) return;
+      body.innerHTML = '';
+      for(let i=0;i<6;i++){
+        const tr = document.createElement('tr');
+        tr.className = 'skel-row';
+        tr.innerHTML = '<td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>';
+        body.appendChild(tr);
+      }
+    })();
+  </script>
+  <script>
+    // Render up to 6 rows for the upcoming Sunday table; pad with placeholders.
+    window.renderSundayPlaylist = function(items = []){
+      const body = document.getElementById('dashPlaylistBody');
+      if(!body) return;
+      body.innerHTML = '';
+      const rows = items.slice(0, 6);
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.title ?? '—'}</td>
+          <td>${row.key ?? row.default_key ?? '—'}</td>
+          <td>${row.bpm ?? '—'}</td>
+          <td>${row.lead_name ?? '—'}</td>
+          <td>${row.harmony_name ?? '—'}</td>
+        `;
+        body.appendChild(tr);
+      });
+      // pad to 6 if fewer provided
+      for(let i = rows.length; i < 6; i++){
+        const tr = document.createElement('tr');
+        tr.className = 'skel-row';
+        tr.innerHTML = '<td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>';
+        body.appendChild(tr);
+      }
+    };
+  </script>
+  </body>
 </html>

@@ -1,104 +1,575 @@
+/* ===============================
+   Genesis Worship Initiative UI
+   Consolidated brand stylesheet
+   =============================== */
+
+/* ---- CSS Variables (Brand) ---- */
 :root{
-  --primary:#263839;
-  --hover:#2f5d6a;
+  /* Brand */
+  --primary:#263839;      /* buttons, headers */
+  --hover:#2f5d6a;        /* hover/secondary */
+  --brand-green:#2b8a3e;  /* accent for banner/accents if needed */
   --text:#333;
+  --muted:#6b7a80;
+
+  /* Surfaces */
   --glass: rgba(255,255,255,0.85);
   --overlay: rgba(255,255,255,0.4);
+
+  /* Effects & Layout */
   --radius: 16px;
+  --radius-sm: 10px;
   --shadow: 0 10px 30px rgba(0,0,0,.12);
+  --shadow-sm: 0 6px 18px rgba(0,0,0,.08);
+
+  /* Tables */
+  --row-hover:#f8fbfc;
+
+  /* Forms */
+  --input-border:#dde3e6;
+  --input-bg:#fff;
+  --input-focus:#c7d9df;
+
+  /* Status colors */
+  --ok:#2f5d6a;
+  --warn:#ffe0a1;
+  --warn-bg:#fff8e1;
+  --danger:#b00020;
 }
 
+/* ---- Reset / Base ---- */
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;color:var(--text);background:#f1f3f4}
+html,body{
+  margin:0;
+  padding:0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  color:var(--text);
+  background:#f1f3f4;
+}
+img{max-width:100%;display:block}
 a{color:var(--hover);text-decoration:none}
 a.btn{color:#fff}
+small,.muted{color:var(--muted)}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.hidden{display:none !important}
 
-.site-header .banner{position:sticky;top:0;z-index:50;background:linear-gradient(0deg, var(--primary), var(--primary));color:#fff;display:flex;align-items:center;gap:12px;padding:10px 16px}
+/* ---- Layout helpers ---- */
+.container{max-width:1100px;margin:24px auto;padding:0 16px}
+.container.wide{max-width:1320px}
+.stack{display:grid;gap:12px}
+.stack-lg{display:grid;gap:18px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.right{text-align:right}
+.centered{min-height:100dvh;display:grid;place-items:center}
+.pad{padding:1rem}
+
+/* ---- Top Banner / Nav ---- */
+.site-header .banner{
+  position:sticky;top:0;z-index:50;
+  background: linear-gradient(0deg, var(--brand-green), var(--brand-green));
+  color:#fff;
+  display:flex;align-items:center;gap:12px;
+  padding:10px 16px;
+}
 .brand{display:flex;align-items:center;gap:10px;color:#fff}
 .logo{height:28px}
-.brand-text{font-weight:600}
+.brand-text,.brand-name{font-weight:700;letter-spacing:.2px}
 .hamburger{margin-left:auto;background:transparent;border:0;color:#fff;font-size:22px;cursor:pointer}
-.menu{display:flex;gap:12px;margin-left:auto}
-.menu.hidden{display:none}
+.menu{display:flex;gap:14px;margin-left:auto;align-items:center}
 .menu a{color:#fff;opacity:.9}
-.menu a:hover{opacity:1}
+.menu a:hover,.menu a.active{opacity:1;text-decoration:underline}
 
-.container{max-width:1100px;margin:24px auto;padding:0 16px}
-.card{background:var(--glass);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+/* ---- Cards ---- */
+.card{
+  background:var(--glass);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:16px;
+  margin-bottom:16px;
+}
 .card.glass{backdrop-filter: blur(10px);background:var(--glass)}
 .card-header{display:flex;align-items:center;gap:12px}
 .card-header .actions{margin-left:auto}
 
-.table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
-.table th,.table td{padding:10px 12px;border-bottom:1px solid #eee;text-align:left}
+/* ---- Tables ---- */
+.table-wrap{overflow:auto}
+.table{
+  width:100%;border-collapse:collapse;background:#fff;
+  border-radius:12px;overflow:hidden;
+}
+.table th,.table td{padding:10px 12px;border-bottom:1px solid #eee;text-align:left;vertical-align:middle}
 .table th{background:#fafafa;font-weight:600}
-.table tr:hover{background:#f8fbfc}
+.table tr:hover{background:var(--row-hover)}
+.table .icon-col{width:42px;text-align:center}
 
-.btn{background:var(--primary);border:0;color:#fff;padding:8px 14px;border-radius:10px;cursor:pointer;box-shadow:var(--shadow)}
+/* ---- Buttons ---- */
+/* Filled and outline variants (normalize across header/nav) */
+.btn--primary { /* alias for filled primary */ }
+.btn--outline {
+  background: transparent;
+  color: #fff;
+  border: none;
+}
+.btn--outline:hover { background: rgba(255,255,255,0.15); }
+.btn{
+  background:var(--primary);border:0;color:#fff;
+  padding:9px 14px;border-radius:var(--radius-sm);
+  cursor:pointer;box-shadow:var(--shadow-sm);
+  display:inline-flex;align-items:center;gap:8px;
+  transition:transform .06s ease, background .2s ease;
+}
 .btn:hover{background:var(--hover)}
+.btn:active{transform:translateY(1px)}
+.btn.block{display:flex;justify-content:center;width:100%}
 .btn.subtle{background:#e9eff0;color:#213;box-shadow:none}
 .btn.subtle:hover{background:#dde7ea}
+.btn.secondary{background:#2f5d6a}
+.btn.danger{background:var(--danger)}
+.btn.ghost{background:transparent;color:var(--primary);border:1px solid var(--input-border)}
+.btn.ghost:hover{background:#eef5f7}
 
-.search{margin-left:auto;padding:8px 10px;border-radius:10px;border:1px solid #dde3e6;min-width:240px}
-.pager{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:10px}
-.muted{opacity:.7}
-.right{text-align:right}
+/* Header nav buttons mimic Login/Register */
+.topnav .nav-link.btn { border: none; color:#fff; background: transparent; }
+.topnav .nav-link.btn:hover { background: rgba(255,255,255,0.15); }
 
-.quick-actions{display:flex;gap:12px;justify-content:center;margin:12px auto}
-.next-holiday{display:flex;gap:10px;align-items:center;justify-content:flex-start}
-
-.layout{display:grid;grid-template-columns:300px 1fr;gap:16px}
-.rail{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:10px;height:70vh;overflow:auto}
-.rail-header{display:flex;align-items:center;justify-content:space-between}
-.rail-list{list-style:none;margin:0;padding:0}
-.rail-content{min-height:70vh}
-
-.song-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
-.song-toolbar .tools-left,.song-toolbar .tools-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.tool{background:#fff;border:1px solid #e1e7ea;border-radius:8px;padding:6px 8px;cursor:pointer}
+/* Icon-only buttons */
+.tool,.icon-btn{
+  background:#fff;border:1px solid #e1e7ea;border-radius:8px;
+  padding:6px 8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+}
 .icon img{height:22px;opacity:.9}
 .icon img:hover{opacity:1}
 
-.meta-row{display:flex;gap:18px;align-items:center;margin:6px 0 10px}
-.layout-sync{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin:10px 0}
-.switch{display:inline-flex;gap:6px;align-items:center}
-.badge{background:#eef3f4;border-radius:999px;padding:4px 8px}
-.scheduled-note{background:#fff8e1;border:1px solid #ffe0a1;border-radius:8px;padding:8px;margin:8px 0}
-
-.song-body{min-height:300px;border:1px dashed #cfd8dc;border-radius:12px;padding:12px;background:#fff}
-
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.stack{display:grid;gap:10px}
-
-.dropdown{position:absolute;background:#fff;border:1px solid #e6ecee;border-radius:10px;padding:8px;box-shadow:var(--shadow)}
-.hidden{display:none}
-.feed{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.chip{background:#f0f4f6;border:1px solid #d8e4ea;border-radius:999px;padding:6px 10px;cursor:pointer}
-.table-responsive{overflow:auto}
-
-/* Base page */
-:root{
-  --primary:#263839;
-  --secondary:#2f5d6a;
-  --text:#333;
+/* ---- Forms ---- */
+.input,.select,.textarea,.search{
+  width:100%;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid var(--input-border);
+  background:var(--input-bg);
+  outline:0;
 }
-*{ box-sizing:border-box; }
-body.page{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:var(--text); background:#f2f3f4; }
-.container{ max-width:1100px; padding:1rem; margin-inline:auto; }
-.space-vertical > *{ margin-block: 1rem; }
-.pad{ padding:1rem; }
+.input:focus,.select:focus,.textarea:focus,.search:focus{
+  border-color:var(--input-focus);
+  box-shadow:0 0 0 3px rgba(47,93,106,.12);
+}
+.search{min-width:240px}
+label .hint{color:var(--muted);font-size:.9em}
 
-/* Top banner */
-.banner-inner{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-.brand{ display:flex; align-items:center; gap:.6rem; text-decoration:none; color:#fff; }
-.brand-name{ font-weight:700; letter-spacing:.2px; }
-.nav a{ color:#fff; text-decoration:none; margin-left:1rem; opacity:.9; }
-.nav a:hover,.nav a.active{ opacity:1; text-decoration:underline; }
+/* ---- Pager ---- */
+.pager{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:10px}
 
-/* Buttons etc. */
-.btn{ background:var(--primary); color:#fff; border:none; border-radius:10px; padding:.55rem .9rem; cursor:pointer; }
-.btn:hover{ background:var(--secondary); }
+/* ---- Utilities / Chips / Badges ---- */
+.badge{background:#eef3f4;border-radius:999px;padding:4px 8px}
+.chip{background:#f0f4f6;border:1px solid #d8e4ea;border-radius:999px;padding:6px 10px;cursor:pointer}
+.muted{opacity:.8}
 
-/* Utility */
-.table-wrap{ overflow:auto; }
+/* ---- Playlists Layout ---- */
+.layout{display:grid;grid-template-columns:300px 1fr;gap:16px}
+.rail{
+  background:#fff;border-radius:12px;box-shadow:var(--shadow);
+  padding:10px;height:70vh;overflow:auto
+}
+.rail-header{display:flex;align-items:center;justify-content:space-between}
+.rail-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.rail-item{padding:8px 10px;border-radius:10px;cursor:pointer}
+.rail-item:hover{background:#f3f7f8}
+.rail-content{min-height:70vh}
+
+/* ---- Song Page / Tools ---- */
+.song-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.song-toolbar .tools-left,.song-toolbar .tools-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+.meta-row{display:flex;gap:18px;align-items:center;margin:6px 0 10px;flex-wrap:wrap}
+.layout-sync{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin:10px 0;flex-wrap:wrap}
+.switch{display:inline-flex;gap:6px;align-items:center}
+.scheduled-note{background:var(--warn-bg);border:1px solid var(--warn);border-radius:8px;padding:8px;margin:8px 0}
+
+.song-body{
+  min-height:300px;border:1px dashed #cfd8dc;border-radius:12px;
+  padding:12px;background:#fff
+}
+
+/* ---- Dropdown / Menus ---- */
+.dropdown{
+  position:absolute;background:#fff;border:1px solid #e6ecee;border-radius:10px;
+  padding:8px;box-shadow:var(--shadow);min-width:200px;z-index:60
+}
+
+/* ---- Lists/Feeds ---- */
+.feed{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+
+/* ---- Responsive ---- */
+@media (max-width: 960px){
+  .layout{grid-template-columns:1fr}
+  .rail{height:auto}
+  .grid-2{grid-template-columns:1fr}
+  .grid-3{grid-template-columns:1fr 1fr}
+  .menu{display:none}
+}
+
+/* ---- Toast / Inline messages ---- */
+.toast{
+  position:fixed;bottom:20px;right:20px;z-index:1000;
+  background:#fff;border:1px solid #e6ecee;border-radius:12px;box-shadow:var(--shadow);
+  padding:10px 14px;min-width:220px;display:none
+}
+.toast.show{display:block}
+.toast.success{border-color:#cfe8d6}
+.toast.error{border-color:#f7c9cf}
+
+/* ---- Auth (login/register) ---- */
+.auth-card{
+  width:100%;
+  max-width:420px;
+  background:#fff;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:18px;
+}
+.auth-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.error { color: var(--danger); }
+.success { color: var(--ok); }
+:root { --primary:#263839; --hover:#2f5d6a; --header-h:100px; }
+  .site-header {
+    background-color: var(--primary);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  .site-header__left,
+  .site-header__right { display:flex; align-items:center; }
+.site-header__right { gap: .2rem; }
+@media (max-width: 480px){
+  .site-header__right { gap: .15rem; }
+}
+  .topnav { display: none; gap: 0.25rem; margin-left: .35rem; }
+  .topnav a {
+    text-decoration: none;
+    color: inherit;
+  }
+  /* Make desktop nav links identical to the Login/Register button */
+  .topnav .nav-link.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.9rem;
+    border-radius: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  /* Keep hover behavior consistent with outline buttons */
+  .topnav .nav-link.btn.btn--outline:hover {
+    background: rgba(255,255,255,0.15);
+  }
+  .topnav a:hover {
+    opacity: .9;
+  }
+  .site-header__right .btn,
+.site-header__right .icon-btn {
+  margin: 0;
+}
+
+#loginBtn {
+  white-space: nowrap;
+}
+  .icon-btn.profile-btn { color:#fff; }
+  .icon-btn.profile-btn:hover { background: rgba(255,255,255,0.15); }
+  .profile-icon { display:block; }
+  .brand__logo { height: 48px; margin-right: 1rem; }
+  @media (min-width: 992px){
+    .topnav { display:flex; }
+    #hamburger { display:none; }
+    #topmenu { display:none !important; }
+  }
+  .user-chip { cursor: pointer; display:flex; align-items:center; position:relative; margin-left:1rem; }
+  .user-chip__avatar { height:30px; width:30px; border-radius:50%; margin-right:.5rem; }
+  .menu--dropdown { position:absolute; top:100%; right:0; background: rgba(255,255,255,0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border:1px solid rgba(255,255,255,0.35); display:none; flex-direction:column; min-width:160px; z-index:1000; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.15); }
+  .menu--dropdown.open { display:flex; }
+  .menu__item { background:none; border:none; color:#111; padding:.6rem .9rem; text-align:left; width:100%; cursor:pointer; border-radius:6px; }
+  .menu__item:hover { background: rgba(255,255,255,0.6); }
+  .icon-btn { background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer; margin-left:1rem; line-height:1; padding:.25rem .5rem; border-radius:6px; }
+  .icon-btn:hover { background: rgba(255,255,255,0.15); }
+  .mobile-menu { position: fixed; top: var(--header-h); right: 1rem; display:none; flex-direction:column; background: rgba(255,255,255,0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border:1px solid rgba(255,255,255,0.35); border-radius:10px; padding:.5rem; min-width:220px; box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:1500; }
+  .mobile-menu.open { display: flex !important; }
+  .mobile-menu__link { color:#111; text-decoration:none; font-weight:600; padding:.5rem .75rem; border-radius:6px; }
+  .mobile-menu__link:hover { background: rgba(255,255,255,0.6); }
+  .hidden { display: none !important; }
+  /* Multi-select instruments layout */
+    .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .25rem .75rem; margin: .25rem 0 .75rem; }
+    @media (max-width: 480px){ .checkbox-grid { grid-template-columns: 1fr; } }
+    .chk { display:flex; align-items:center; gap:.5rem; font-size:.95rem; }
+    .form__fieldset { border:0; padding:0; margin:0; }
+
+    @media (max-width: 768px) {
+  #loginBtn {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+    padding: 0.45rem 0.7rem;
+    max-width: 96px;
+  }
+  .site-header__right {
+    gap: 0.2rem;
+  }
+  .topnav .nav-link.btn { padding: 0.45rem 0.7rem; }
+}
+    /* --- Auth Modal (frosted) --- */
+    dialog.modal {
+      border: none;
+      padding: 0;
+      background: transparent;
+    }
+    dialog.modal::backdrop {
+      background: rgba(38,56,57,0.55); /* dim overlay using primary tone */
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+    .modal-card {
+      background: rgba(255,255,255,0.45);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.35);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+      border-radius: 16px;
+      width: min(92vw, 560px);
+      margin: 0 auto;
+      overflow: hidden;
+      animation: modalPop .18s ease-out;
+    }
+    @keyframes modalPop {
+      from { transform: translateY(8px) scale(0.98); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .modal-card .tabs {
+      padding: .75rem;
+      background: rgba(255,255,255,0.55);
+      border-bottom: 1px solid rgba(255,255,255,0.35);
+    }
+    .modal-body {
+      padding: 1rem 1.25rem 1.25rem;
+    }
+    /* Strong override for tab panels */
+    .tab-btn { padding: .6rem 1.25rem; border-radius: 12px; font-weight: 600; }
+    .tabs { display:flex; gap:.5rem; margin-bottom:1rem; justify-content:flex-start; }
+    .tab-content { display: none !important; }
+    .tab-content.active { display: block !important; }
+
+    /* Modal corner close button */
+    .modal-close{
+      position:absolute;
+      top:.6rem;
+      right:.6rem;
+      border:none;
+      background:rgba(255,255,255,0.75);
+      color:var(--primary);
+      font-weight:700;
+      line-height:1;
+      width:34px;
+      height:34px;
+      border-radius:10px;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      box-shadow:0 4px 14px rgba(0,0,0,.12);
+    }
+    .modal-close:hover{ background:#fff; }
+
+    /* Make answers/checkboxes look nicer */
+    input[type="checkbox"], input[type="radio"] { accent-color: var(--primary); }
+    .checkbox-grid .chk{
+      padding:.4rem .6rem;
+      border:1px solid rgba(0,0,0,0.08);
+      border-radius:10px;
+      background:rgba(255,255,255,0.55);
+    }
+    .checkbox-grid .chk:hover{ border-color: rgba(0,0,0,0.18); }
+
+  /* --- Unified form field styling (frosted inputs) --- */
+  .form input[type="text"],
+  .form input[type="email"],
+  .form input[type="password"],
+  .form input[type="date"],
+  .form input[type="number"],
+  .form select,
+  .form textarea {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.15);
+    background: rgba(255,255,255,0.8);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) inset, 0 1px 0 rgba(255,255,255,0.5);
+    transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+    font-size: 1rem;
+    outline: none;
+  }
+  .form input::placeholder,
+  .form textarea::placeholder { color: #8aa2a3; }
+
+  .form input:focus,
+  .form select:focus,
+  .form textarea:focus {
+    border-color: var(--hover);
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 0 0 3px rgba(47,93,106,0.18), 0 2px 10px rgba(0,0,0,0.08) inset;
+  }
+
+  /* Labels stacked nicely */
+  .form label { font-weight: 600; color: #203031; display:block; }
+  .form label > input,
+  .form label > select,
+  .form label > textarea { margin-top: .35rem; }
+
+  /* Make the tabs match button styling and spacing */
+  .tabs { gap: .5rem; }
+  .tab-btn { border-radius: 12px; }
+
+  /* Refine checkbox / radio spacing inside modal */
+  .checkbox-grid .chk { background: rgba(255,255,255,0.7); }
+  .checkbox-grid input { width: 18px; height: 18px; }
+
+  /* Buttons in auth forms should size to their text and align left */
+  .form .row .btn { width: auto; justify-self: start; padding-inline: 1.25rem; min-width: fit-content; }
+  .btn, .btn.btn--primary, .btn.btn--outline { display: inline-flex; align-items: center; gap: .5rem; }
+
+  /* Improve selects (dropdowns) – frosted, with custom chevron */
+  .form select {
+    appearance: none; /* modern */
+    -webkit-appearance: none; /* Safari */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23263839' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px 16px;
+    padding-right: 2.25rem; /* space for chevron */
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.15);
+    background-color: rgba(255,255,255,0.8);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) inset, 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .form select:focus {
+    border-color: var(--hover);
+    background-color: rgba(255,255,255,0.95);
+    box-shadow: 0 0 0 3px rgba(47,93,106,0.18), 0 2px 10px rgba(0,0,0,0.08) inset;
+    outline: none;
+  }
+  /* Make primary buttons in the auth modal slightly wider than text */
+  .modal-body .btn { padding-inline: 1.25rem; min-width: fit-content; }
+  /* Tab buttons spacing to match */
+  .tabs .tab-btn { padding: .6rem 1.25rem; }
+
+  /* --- Modal & Forms: spacing and balance overrides --- */
+
+  /* More generous padding inside modal content */
+  .modal-body{
+    padding: 2rem 2.25rem 2.25rem;
+  }
+
+  /* Even vertical rhythm between stacked fields */
+  .form.stack.gap-sm{
+    gap: 1.4rem;
+  }
+
+  /* Grid rows inside forms should keep same rhythm */
+  .form .row{
+    gap: 1.4rem;
+  }
+
+  /* Labels a bit tighter to their inputs for visual grouping */
+  .form label{
+    font-weight: 600;
+    margin-bottom: .4rem;
+    display: inline-block;
+  }
+
+  /* Inputs/selects consistent padding and frosted look (keeps earlier style, refines padding) */
+  .form input[type="text"],
+  .form input[type="email"],
+  .form input[type="password"],
+  .form input[type="date"],
+  .form input[type="number"],
+  .form select,
+  .form textarea{
+    padding: .85rem 1rem;
+    font-size: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    width: 100%;
+    background: rgba(255,255,255,0.9);
+  }
+
+  /* Tabs aligned left with comfy spacing; active state uses hover color */
+  .tabs{
+    display: flex;
+    gap: .75rem;
+    margin-bottom: 1.5rem;
+    justify-content: flex-start;
+  }
+  .tab-btn{
+    padding: .6rem 1.4rem;
+    font-size: .95rem;
+    font-weight: 600;
+    border-radius: 12px;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    cursor: pointer;
+  }
+  .tab-btn.active{ background: var(--hover); }
+  .tab-btn:hover{ background: var(--hover); }
+
+  /* Make primary action buttons inside modal slightly wider than text while staying compact */
+  .modal-body .btn{ padding-inline: 1.25rem; min-width: fit-content; }
+
+  /* Checkbox "chips" slightly airier */
+  .checkbox-grid .chk{
+    padding:.5rem .7rem;
+    border-radius:12px;
+  }
+
+  /* --- Spacing polish: labels/legends to inputs --- */
+  .form label > input,
+  .form label > select,
+  .form label > textarea{
+    margin-top: .7rem !important; /* more air between question & box */
+  }
+
+  /* Fieldset legends (e.g., Instruments) */
+  .form__fieldset legend{
+    display:block;
+    font-weight:600;
+    margin-bottom:.7rem !important; /* more room below subtitles */
+  }
+
+  /* Checkbox grid gets a bit more top spacing from legend */
+  .checkbox-grid{
+    margin-top:.6rem !important;
+    row-gap:.5rem;
+  }
+
+  /* Keep a slightly wider rhythm between stacked rows */
+  .form .row{ gap:1.6rem !important; }
+  .form.stack.gap-sm{ gap:1.6rem !important; }
+
+
+/* ---- Footer ---- */
+.site-footer{
+  background: var(--primary);
+  color:#fff;
+  padding: 18px 16px;
+}
+.site-footer .brandline{ font-weight:700; letter-spacing:.2px; }
+.site-footer .tagline{ opacity:.9; margin-top:4px; }
+.site-footer .fineprint{ opacity:.8; margin-top:8px; }
+
+/* Verse of the Day */
+.verse-block { background: var(--glass); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; }
+.verse-block .label { font-weight: 700; color: #203031; opacity:.9; margin-bottom: 6px; display:block; }
+.verse-block .text { font-size: 1.05rem; line-height: 1.5; color: #203031; }
+.verse-block .ref { color: var(--muted); font-weight:600; margin-left:.5rem; }

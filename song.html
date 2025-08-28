@@ -10,70 +10,362 @@
 <script defer src="assets/js/app.js"></script>
 
 <script defer src="assets/js/song.js"></script>
+<style>
+  /* Drawing canvas sits under notes, fills the song body */
+#drawLayer{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:1;
+  touch-action:none; /* better pointer handling on touch devices */
+}
+/* Ensure notes render above the canvas */
+.note-item{ z-index:2; }
+  .auth-title{ text-align:center; font-weight:700; margin:.25rem 0 1rem; color:#203031; }
+  .form-actions{ display:flex; justify-content:center; margin-top:.25rem; }
+  .btn--lg{ font-size:1.05rem; padding:.8rem 1.25rem; border-radius:12px; }
+  .btn--sm{ font-size:.85rem; padding:.35rem .6rem; border-radius:8px; }
+  /* Frosted modal visuals */
+  dialog.modal { border:none; padding:0; background:transparent; }
+  dialog.modal::backdrop { background: rgba(38,56,57,0.55); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  .modal-card{ background: rgba(255,255,255,0.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border:1px solid rgba(255,255,255,0.35); box-shadow:0 20px 45px rgba(0,0,0,0.25); border-radius:16px; width:min(92vw,560px); overflow:hidden; }
+  .tabs{ display:flex; gap:.5rem; padding:.75rem; background:rgba(255,255,255,0.55); border-bottom:1px solid rgba(255,255,255,0.35); }
+  .tab-btn{ flex:1; font-weight:600; }
+  .tab-content{ display:none; }
+  .tab-content.active{ display:block; }
+  .mobile-menu.open { display:flex !important; }
+  /* Symbols popover */
+  .sym-popover{ position:fixed; z-index:2000; background:#fff; border:1px solid rgba(0,0,0,.12); box-shadow:0 10px 30px rgba(0,0,0,.18); border-radius:12px; padding:.5rem; display:none; min-width:260px; }
+  .sym-popover.open{ display:block; }
+  .sym-grid{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:.35rem; }
+  .sym-btn{ border:0; border-radius:10px; padding:.45rem .5rem; background:rgba(38,56,57,.07); color:#203031; font-weight:600; cursor:pointer; }
+  .sym-btn:hover{ background:rgba(38,56,57,.15); }
+  .sym-popover .title{ font-weight:700; margin:.15rem .2rem .4rem; color:#203031; font-size:.9rem; }
+  /* --- Song page layout polish --- */
+  .song-title{ text-align:center; font-size:2rem; font-weight:800; margin: .25rem 0 1rem; letter-spacing:.2px; }
+  .song-meta{ max-width:880px; margin:0 auto 1rem; display:grid; grid-template-columns: 1fr; gap:.75rem; }
+  .song-stats{ display:flex; gap:1rem; align-items:center; justify-content:flex-start; }
+  .song-stats .stat{ background:rgba(38,56,57,.07); border:1px solid rgba(0,0,0,.08); border-radius:12px; padding:.35rem .6rem; display:flex; gap:.35rem; align-items:center; font-weight:600; color:#203031; }
+  .song-stats .label{ opacity:.7; font-weight:600; }
+  .players{ display:flex; flex-direction:column; gap:.4rem; }
+  .player{ display:flex; align-items:center; gap:.4rem; padding:.15rem .25rem; background:transparent; border:0; }
+  .player .tag{ min-width:92px; font-weight:700; color:#203031; }
+  /* Use the same compact circular icon style as the header play button */
+  .player .icon-round{ width:28px; height:28px; background:rgba(38,56,57,0.10) !important; box-shadow: inset 0 0 0 2px rgba(38,56,57,0.35) !important; border-radius:999px !important; display:inline-grid; place-items:center; }
+  .player .icon-round svg{ width:14px; height:14px; fill:#263839; }
+  .time{ min-width:48px; text-align:center; font-variant-numeric: tabular-nums; color:#203031; font-weight:700; }
+  .bar{ position:relative; height:3px; flex:1; background:rgba(38,56,57,.2); border-radius:999px; cursor:pointer; }
+  .bar .fill{ position:absolute; left:0; top:0; bottom:0; width:0%; background:#263839; border-radius:999px; }
+  .bar .handle{ position:absolute; top:50%; transform:translate(-50%,-50%); width:8px; height:8px; border-radius:50%; background:#fff; box-shadow:0 0 0 2px #263839; left:0%; }
+  .hidden-inline{ display:none !important; }
+  .is-hidden{ display:none !important; }
+  .player-toggles{ display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin:.25rem 0 .25rem; }
+  .player-toggles .btn{ padding:.35rem .7rem; border-radius:10px; }
+  /* Notation key helper appears on its own line */
+  #nashKeyWrap{ display:block; margin:.35rem 0 0; }
+  #nashKeyWrap select{ width:auto; }
+  /* Place toolbar AFTER meta/layout sections visually separated */
+  .song-toolbar{ margin-top:1rem; border-top:1px dashed rgba(0,0,0,.08); padding-top:.75rem; }
+  @media (min-width: 720px){
+    .song-meta{ grid-template-columns: auto 1fr; align-items:flex-start; }
+    .players{ margin-left: .25rem; }
+  }
+  /* Visible brand text next to the logo */
+  .brand__name{ color:#fff; font-weight:700; margin-left:.5rem; letter-spacing:.2px; white-space:nowrap; }
+  /* Center the main song area and refine visuals */
+  .song-shell{ max-width: 980px; margin: 0 auto; }
+  .card.glass{ margin: 0 auto 1rem; }
+  /* Dotted outline for the editable song body */
+  .song-body{
+    position: relative;           /* host for absolutely positioned notes */
+    border: 2px dotted rgba(38,56,57,.25);
+    border-radius: 12px;
+    padding: 1rem;
+    background: rgba(255,255,255,.45);
+    min-height: 220px;            /* give space even when empty */
+    cursor: default;
+  }
+  /* --- Notes layer (text + symbols) --- */
+  .note-item{
+    position:absolute;
+    top:0; left:0;
+    transform: translate(-50%, -50%);
+    padding:.15rem .35rem;
+    border-radius:8px;
+    background:rgba(255,255,255,.9);
+    box-shadow:0 3px 10px rgba(0,0,0,.12);
+    color: var(--note-color, #203031);
+    font-weight:700;
+    user-select:none;
+    cursor: move;
+    line-height:1.1;
+    max-width: 60ch;
+  }
+  .note-item[contenteditable="true"]{
+    outline:none;
+    cursor:text;
+    font-weight:600;
+  }
+  .song-body.notes-hidden .note-item{ display:none !important; }
+
+  /* Palette swatches */
+  .palette{ display:flex; gap:.25rem; align-items:center; }
+  .sw{ width:18px; height:18px; border-radius:50%; border:1px solid rgba(0,0,0,.12); cursor:pointer; }
+  .sw:focus{ outline:2px solid rgba(38,56,57,.35); outline-offset:2px; }
+
+  /* Keep right-side buttons pinned to the right edge of the toolbar */
+  .song-toolbar .tools-left{ margin-right:auto; }
+  .song-toolbar .tools-right{ margin-left:auto; }
+  /* File meta row under the card */
+  .file-meta{
+    display:flex; gap:1.5rem; flex-wrap:wrap; align-items:center;
+    color:#203031; opacity:.9; font-size:.95rem; margin:.25rem 0 0;
+  }
+  .file-meta .label{ opacity:.65; margin-right:.25rem; }
+  /* Toolbar polish */
+  .song-toolbar{
+    margin-top:1rem; padding:.6rem .75rem;
+    background: rgba(255,255,255,.55);
+    border: 1px dashed rgba(38,56,57,.25);
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.06) inset;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem;
+  }
+  .song-toolbar .tools-left, .song-toolbar .tools-right{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+  .song-toolbar .tool, .song-toolbar .btn, .song-toolbar .subtle{
+    border:0; border-radius:10px; padding:.4rem .6rem; font-weight:600; cursor:pointer;
+    background: rgba(38,56,57,.08); color:#203031;
+  }
+  .song-toolbar .tool:hover, .song-toolbar .btn:hover, .song-toolbar .subtle:hover{
+    background: rgba(38,56,57,.16);
+  }
+  .song-toolbar .tool.active, .song-toolbar .tool[aria-pressed='true']{ outline:2px solid rgba(38,56,57,.45); box-shadow: inset 0 0 0 2px rgba(38,56,57,.35); }
+  .song-body.notes-hidden #drawLayer{ display:none !important; }
+  .btn.is-dirty::after{
+    content:'•';
+    margin-left:.35rem;
+    font-weight:900;
+    vertical-align:middle;
+  }
+
+  /* --- Chord rendering --- */
+  .chord{
+    display:inline-block;
+    font-weight:800;
+    letter-spacing:.2px;
+    color:#203031;
+    padding:0 .12rem;
+    border-radius:6px;
+    background:rgba(255,255,255,.6);
+    box-shadow:0 1px 0 rgba(0,0,0,.05);
+    line-height:1.2;
+    user-select:none;
+    white-space:nowrap;
+  }
+</style>
 </head>
 <body>
 <header class="site-header">
-  <div class="banner">
-    <a class="brand" href="index.html">
-      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
-      <span class="brand-text">Genesis Worship Initiative</span>
+  <div class="site-header__left">
+    <a href="index.html" class="brand" aria-label="Genesis Worship Initiative">
+      <img src="assets/images/logo-white.png" alt="Genesis Worship Initiative" class="brand__logo" />
+      <span class="brand__name">Genesis Worship Initiative</span>
     </a>
-    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
-    <nav id="topmenu" class="menu hidden">
-      <a href="index.html">Home</a>
-      <a href="playlists.html">Playlists</a>
-      <a href="song-index.html">Songs List</a>
-      <a href="availability.html">Availability</a>
-      <a href="prayers.html">Prayer Wall</a>
-      <a href="suggestions.html">Suggestions</a>
-      <a href="profile.html">Profile</a>
-      <a class="admin-only" href="admin.html">Admin</a>
-    </nav>
   </div>
-</header>
 
-<main class="container">
-  <section class="card glass">
-    <div class="song-toolbar">
-      <div class="tools-left">
-        <button class="tool" data-tool="pencil" title="Pencil">✏️</button>
-        <button class="tool" data-tool="marker" title="Marker">🖊️</button>
-        <button class="tool" data-tool="highlighter" title="Highlighter">🖍️</button>
-        <select id="strokeWidth">
-          <option>Thin</option><option>Medium</option><option>Thick</option>
-        </select>
-        <input id="opacity" type="range" min="0.1" max="1" step="0.1" value="1" />
-        <button class="tool" data-tool="text" title="Text">T</button>
-        <input id="fontSize" type="number" min="10" max="64" value="16" />
-        <input id="fontColor" type="color" value="#263839" />
-        <button class="tool" id="symbolsBtn" title="Symbols">♪</button>
-        <button id="toggleNotes" class="btn subtle">Notes On/Off</button>
-      </div>
-      <div class="tools-right">
-        <button id="exportPdf" class="btn">Export PDF</button>
-        <div class="menu-dot">
-          <button id="moreBtn" class="btn subtle">…</button>
-          <div id="moreMenu" class="dropdown hidden">
-            <button id="shareNotes">Share Notes</button>
-            <button id="exportPdf2">Export PDF</button>
-          </div>
-        </div>
+  <div class="site-header__right">
+    <!-- Profile icon (desktop) -->
+    <a href="profile.html" id="profileIconBtn" class="icon-btn profile-btn" aria-label="Profile">
+      <svg class="profile-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 001 1h14a1 1 0 001-1v-1c0-2.761-3.582-5-8-5z"/>
+      </svg>
+    </a>
+
+    <!-- Login button (hidden if logged in) -->
+    <button id="loginBtn" class="btn btn--outline">Login/Register</button>
+
+    <!-- Shown after login -->
+    <div id="userChip" class="user-chip hidden" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
+      <img id="userAvatar" alt="User avatar" class="user-chip__avatar"
+           src="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24'&gt;&lt;circle cx='12' cy='7' r='5' fill='%23ffffff'/&gt;&lt;path d='M2 22c0-5.5 4.5-8 10-8s10 2.5 10 8' fill='%23ffffff'/&gt;&lt;/svg&gt;"/>
+      <span id="userName" class="user-chip__name"></span>
+      <div id="userDropdown" class="menu menu--dropdown" role="menu">
+        <button id="logoutBtn" class="menu__item" role="menuitem">Logout</button>
       </div>
     </div>
 
-    <h1 id="songTitle">Song</h1>
-    <div class="meta-row">
-      <span>BPM: <strong id="songBpm">—</strong></span>
-      <span>Key: <strong id="songKey">—</strong></span>
-      <a id="ytLink" class="icon" target="_blank" rel="noopener">
-        <img src="assets/images/youtube.svg" alt="YouTube" />
-      </a>
-      <a id="audioHLink" class="icon" target="_blank" rel="noopener">
-        <img src="assets/images/audio.svg" alt="Audio Harmony" />
-      </a>
-      <a id="audioLink" class="icon" target="_blank" rel="noopener">
-        <img src="assets/images/audio.svg" alt="Audio" />
-      </a>
+    <!-- Desktop nav -->
+    <nav class="topnav" aria-label="Primary">
+      <a href="index.html" class="btn btn--outline nav-link">Home</a>
+      <a href="playlists.html" class="btn btn--outline nav-link">Playlists</a>
+      <a href="song-index.html" class="btn btn--outline nav-link">Songs List</a>
+      <a href="availability.html" class="btn btn--outline nav-link">Availability</a>
+      <a href="prayers.html" class="btn btn--outline nav-link">Prayer Wall</a>
+      <a href="suggestions.html" class="btn btn--outline nav-link">Suggestions</a>
+    </nav>
+
+    <!-- Mobile hamburger -->
+    <button id="hamburger" aria-label="Toggle menu" aria-expanded="false" class="icon-btn">&#9776;</button>
+  </div>
+</header>
+<nav id="topmenu" class="mobile-menu" aria-label="Primary mobile" aria-hidden="true">
+  <a href="index.html" class="mobile-menu__link">Home</a>
+  <a href="playlists.html" class="mobile-menu__link">Playlists</a>
+  <a href="song-index.html" class="mobile-menu__link">Songs List</a>
+  <a href="availability.html" class="mobile-menu__link">Availability</a>
+  <a href="prayers.html" class="mobile-menu__link">Prayer Wall</a>
+  <a href="suggestions.html" class="mobile-menu__link">Suggestions</a>
+</nav>
+
+<!-- Auth Modal -->
+<dialog id="authModal" class="modal" aria-labelledby="authTitle">
+  <div class="modal-card">
+    <button id="authClose" class="modal-close" aria-label="Close">×</button>
+    <div class="tabs" role="tablist">
+      <button id="tabLogin" class="tab-btn btn btn--primary" role="tab" aria-controls="panelLogin" aria-selected="true">Login</button>
+      <button id="tabRegister" class="tab-btn btn btn--outline" role="tab" aria-controls="panelRegister" aria-selected="false">Register</button>
+    </div>
+    <div class="modal-body">
+      <section id="panelLogin" class="tab-content active" role="tabpanel" aria-labelledby="tabLogin">
+        <h2 class="auth-title">Login</h2>
+        <form id="loginForm" class="form stack gap-sm">
+          <label>Email<input type="email" id="loginEmail" required placeholder="you@example.com"></label>
+          <label>Password<input type="password" id="loginPassword" required placeholder="Your password"></label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary btn--lg">Login</button>
+          </div>
+        </form>
+      </section>
+      <section id="panelRegister" class="tab-content" role="tabpanel" aria-labelledby="tabRegister">
+        <h2 class="auth-title">Register</h2>
+        <form id="registerForm" class="form stack gap-sm">
+          <label>Name<input type="text" id="regName" required placeholder="Your full name"></label>
+          <label>Birthday<input type="date" id="regBirthday"></label>
+          <label>Email<input type="email" id="regEmail" required placeholder="you@example.com"></label>
+          <label>Password<input type="password" id="regPassword" required minlength="6" placeholder="Minimum 6 characters"></label>
+          <label>Confirm Password<input type="password" id="regPassword2" required placeholder="Re-enter password"></label>
+
+          <fieldset class="form__fieldset">
+            <legend>What instrument(s) do you play? (select all that apply)</legend>
+            <div class="checkbox-grid">
+              <label class="chk"><input type="checkbox" value="Piano" name="regInstruments"> Piano</label>
+              <label class="chk"><input type="checkbox" value="Acoustic Guitar" name="regInstruments"> Acoustic Guitar</label>
+              <label class="chk"><input type="checkbox" value="Electric Guitar" name="regInstruments"> Electric Guitar</label>
+              <label class="chk"><input type="checkbox" value="Drums" name="regInstruments"> Drums</label>
+              <label class="chk"><input type="checkbox" value="Bass" name="regInstruments"> Bass</label>
+              <label class="chk"><input type="checkbox" value="Other" name="regInstruments"> Other</label>
+            </div>
+          </fieldset>
+          <label>Do you sing?
+            <select id="regSings">
+              <option value="">Select</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </label>
+          <label>Role
+            <select id="regRole">
+              <option value="member" selected>Member</option>
+              <option value="editor">Editor</option>
+              <option value="tech">Tech</option>
+              <option value="admin">Admin</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+            <label>Language
+              <select id="regLang">
+                <option value="ro" selected>Română</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+            <label>Default Layout
+              <select id="regLayout">
+                <option value="lyrics_only">Lyrics only</option>
+                <option value="lyrics_chords" selected>Lyrics + Chords</option>
+                <option value="cues">Cues</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary btn--lg">Create Account</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+</dialog>
+
+<main class="container">
+  <div class="song-shell">
+  <section class="card glass">
+    <h1 class="song-title" id="songTitle">Song</h1>
+    <div class="song-meta">
+      <div class="song-stats">
+        <div class="stat"><span class="label">BPM</span><span id="songBpm">—</span></div>
+        <div class="stat">
+  <span class="label">Key</span>
+  <span id="songKey">C</span>
+  <button id="keyDown" class="btn btn--sm" aria-label="Transpose down" title="Transpose down">–</button>
+  <button id="keyUp"   class="btn btn--sm" aria-label="Transpose up" title="Transpose up">+</button>
+</div>
+        <a id="ytLink" class="icon-round" target="_blank" rel="noopener" aria-label="YouTube">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        </a>
+      </div>
+      <!-- Toggle buttons to reveal/hide the players -->
+      <div class="player-toggles">
+        <button id="btnReh" class="btn btn--outline" type="button" aria-controls="playerMain" aria-expanded="false">Repetiții</button>
+        <button id="btnHarm" class="btn btn--outline" type="button" aria-controls="playerHarmony" aria-expanded="false">Harmony</button>
+      </div>
+      <div class="players">
+        <div class="player is-hidden" id="playerMain" data-source="#audioLink">
+          <button class="icon-round" data-jump="-10" title="-10s" aria-label="Back 10 seconds">
+            <svg viewBox="0 0 24 24"><path d="M12 5v2a5 5 0 110 10h-1v-2h1a3 3 0 100-6V5zM8 6l-4 4 4 4V6z"/></svg>
+          </button>
+          <button class="icon-round" data-role="toggle" aria-label="Play/Pause">
+            <svg viewBox="0 0 24 24" class="icon-play"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="icon-round" data-jump="10" title="+10s" aria-label="Forward 10 seconds">
+            <svg viewBox="0 0 24 24"><path d="M12 5v2a5 5 0 100 10h1v-2h-1a3 3 0 110-6V5zM16 6l4 4-4 4V6z"/></svg>
+          </button>
+          <span class="time" data-role="time">0:00</span>
+          <div class="bar" data-role="bar">
+            <div class="fill" data-role="fill"></div>
+            <div class="handle" data-role="handle"></div>
+          </div>
+          <button class="icon-round" data-role="vol" aria-label="Volume">
+            <svg viewBox="0 0 24 24"><path d="M5 9v6h4l5 4V5L9 9H5z" /></svg>
+          </button>
+          <input type="range" min="0" max="1" step="0.01" value="1" class="vol-slider hidden-inline" data-role="vol-slider" aria-label="Volume slider"/>
+        </div>
+        <div class="player is-hidden" id="playerHarmony" data-source="#audioHLink">
+          <span class="tag">Harmony</span>
+          <button class="icon-round" data-jump="-10" title="-10s" aria-label="Back 10 seconds">
+            <svg viewBox="0 0 24 24"><path d="M12 5v2a5 5 0 110 10h-1v-2h1a3 3 0 100-6V5zM8 6l-4 4 4 4V6z"/></svg>
+          </button>
+          <button class="icon-round" data-role="toggle" aria-label="Play/Pause">
+            <svg viewBox="0 0 24 24" class="icon-play"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="icon-round" data-jump="10" title="+10s" aria-label="Forward 10 seconds">
+            <svg viewBox="0 0 24 24"><path d="M12 5v2a5 5 0 100 10h1v-2h-1a3 3 0 110-6V5zM16 6l4 4-4 4V6z"/></svg>
+          </button>
+          <span class="time" data-role="time">0:00</span>
+          <div class="bar" data-role="bar">
+            <div class="fill" data-role="fill"></div>
+            <div class="handle" data-role="handle"></div>
+          </div>
+          <button class="icon-round" data-role="vol" aria-label="Volume">
+            <svg viewBox="0 0 24 24"><path d="M5 9v6h4l5 4V5L9 9H5z" /></svg>
+          </button>
+          <input type="range" min="0" max="1" step="0.01" value="1" class="vol-slider hidden-inline" data-role="vol-slider" aria-label="Volume slider"/>
+        </div>
+      </div>
+      <!-- Hidden anchors used only as data sources for the players (song.js fills these) -->
+      <a id="audioLink" class="hidden-inline"></a>
+      <a id="audioHLink" class="hidden-inline"></a>
     </div>
 
     <div id="scheduledNote" class="scheduled-note hidden"></div>
@@ -86,7 +378,7 @@
             <option value="nashville">Nashville</option>
           </select>
         </label>
-        <label id="nashKeyWrap" class="hidden">Key (for Nashville)
+        <label id="nashKeyWrap" class="hidden">Key
           <select id="nashKey">
             <option>C</option><option>C#</option><option>D</option><option>Eb</option>
             <option>E</option><option>F</option><option>F#</option><option>G</option>
@@ -112,20 +404,784 @@
       </div>
     </div>
 
-    <div id="songBody" class="song-body">
-      <!-- section bands + chord-over-lyrics will render here -->
-    </div>
+    <div class="song-toolbar">
+      <div class="tools-left">
+        <button class="tool" data-tool="pencil" title="Pencil">✏️</button>
+        <button class="tool" data-tool="marker" title="Marker">🖊️</button>
+        <button class="tool" data-tool="highlighter" title="Highlighter">🖍️</button>
+        <select id="strokeWidth">
+          <option>Thin</option><option>Medium</option><option>Thick</option>
+        </select>
+        <input id="opacity" type="range" min="0.1" max="1" step="0.1" value="1" />
+        <button class="tool" data-tool="text" title="Text">T</button>
+        <input id="fontSize" type="number" min="10" max="64" value="16" />
+        <input id="fontColor" type="color" value="#263839" aria-label="Custom color" />
+        <button class="tool" id="symbolsBtn" title="Symbols">♪</button>
+        <div id="symbolsPopover" class="sym-popover" role="menu" aria-hidden="true">
+          <div class="title">Quick symbols</div>
+          <div class="sym-grid">
+            <button class="sym-btn" data-symbol="⏸ pause">⏸ Pause</button>
+            <button class="sym-btn" data-symbol="⏵ play">⏵ Play</button>
+            <button class="sym-btn" data-symbol="⏹ stop">⏹ Stop</button>
+            <button class="sym-btn" data-symbol="⟲ -10s">⟲ -10s</button>
+            <button class="sym-btn" data-symbol="+10s ⟳">+10s ⟳</button>
+            <button class="sym-btn" data-symbol="↗ ramp up">↗ Ramp ↑</button>
+            <button class="sym-btn" data-symbol="↘ ramp down">↘ Ramp ↓</button>
+            <button class="sym-btn" data-symbol="△ build">△ Build</button>
+            <button class="sym-btn" data-symbol="⛔ cut">⛔ Cut</button>
+            <button class="sym-btn" data-symbol="♪ cue">♪ Cue</button>
+            <button class="sym-btn" data-symbol="♯ key up">♯ Key ↑</button>
+            <button class="sym-btn" data-symbol="♭ key down">♭ Key ↓</button>
+            <button class="sym-btn" data-symbol="⟲ repeat">⟲ Repeat</button>
+            <button class="sym-btn" data-symbol="// break">// Break</button>
+            <button class="sym-btn" data-symbol="— sustain">— Sustain</button>
+            <button class="sym-btn" data-symbol="𝄐 fermata">𝄐 Fermata</button>
+          </div>
+        </div>
+        <button id="toggleNotes" class="btn subtle">Notes On/Off</button>
+      </div>
+<script>
+(function notesAndToolbarInit(){
+  function init(){
+    const body = document.getElementById('songBody');
+    const canvas = document.getElementById('drawLayer');
+    const toggleBtn = document.getElementById('toggleNotes');
+    const colorInput = document.getElementById('fontColor');
+    const strokeSel = document.getElementById('strokeWidth');
+    const opacityInput = document.getElementById('opacity');
+    const toolBtns = Array.from(document.querySelectorAll('.tool[data-tool]'));
+    const saveBtn = document.getElementById('saveNotes');
+    if(!body || !canvas) return;
 
-    <div class="meta-footer">
-      <div>File created by: <span id="createdBy">—</span></div>
-      <div>Date created: <span id="createdAt">—</span></div>
-      <div>Last updated: <span id="updatedAt">—</span></div>
+    const ctx = canvas.getContext('2d');
+    let dpr = Math.max(1, window.devicePixelRatio || 1);
+
+    // --- Helpers for sizing & song identity
+    function getSongId(){
+      const t = (document.getElementById('songTitle')?.textContent || '').trim();
+      return 'gwi:notes:' + (t || location.pathname);
+    }
+
+    (function simpleKeyButtons(){
+      const songKeyEl = document.getElementById('songKey');
+      const btnDown = document.getElementById('keyDown');
+      const btnUp   = document.getElementById('keyUp');
+
+      if(!songKeyEl) return;
+
+      // Mixed sharp/flat list so we can rotate sensibly for now.
+      const NOTES = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+      function idxOf(k){ const i = NOTES.indexOf(k); return i >= 0 ? i : 0; }
+      function setKey(k){
+        songKeyEl.textContent = k;
+        window.__gwiKey = k; // expose current key for later transposer step
+      }
+
+      // Initialize if empty/placeholder
+      const initText = (songKeyEl.textContent || '').trim();
+      if(!initText || initText === '—'){ setKey('C'); } else { window.__gwiKey = initText; }
+
+      btnDown?.addEventListener('click', ()=>{
+        const i = idxOf((songKeyEl.textContent || 'C').trim());
+        setKey(NOTES[(i + NOTES.length - 1) % NOTES.length]);
+      });
+      btnUp?.addEventListener('click', ()=>{
+        const i = idxOf((songKeyEl.textContent || 'C').trim());
+        setKey(NOTES[(i + 1) % NOTES.length]);
+      });
+    })();
+    function cssSize(el){ const r = el.getBoundingClientRect(); return { w: Math.max(1, Math.floor(r.width)), h: Math.max(1, Math.floor(r.height)) }; }
+
+    function sizeCanvas(keepImage){
+      dpr = Math.max(1, window.devicePixelRatio || 1);
+      const r = cssSize(body);
+      // If keeping image, capture bitmap before resize
+      let snapshot = null;
+      if(keepImage){
+        snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      }
+      canvas.width  = Math.max(1, Math.floor(r.w * dpr));
+      canvas.height = Math.max(1, Math.floor(r.h * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
+      if(snapshot){
+        // Put back the snapshot scaled to the new size
+        const tmp = document.createElement('canvas');
+        tmp.width = snapshot.width; tmp.height = snapshot.height;
+        tmp.getContext('2d').putImageData(snapshot, 0, 0);
+        ctx.save();
+        ctx.setTransform(canvas.width/tmp.width, 0, 0, canvas.height/tmp.height, 0, 0);
+        ctx.drawImage(tmp, 0, 0);
+        ctx.restore();
+      }
+    }
+    sizeCanvas(false);
+    window.addEventListener('resize', ()=> sizeCanvas(true));
+
+    // --- Tool state
+    let activeColor = colorInput ? colorInput.value : '#203031';
+    let activeTool = 'none'; // 'none' | 'pencil' | 'marker' | 'highlighter' | 'text'
+    let drawing = false;
+    let lastClickPos = null;
+
+    function baseWidth(){
+      const v = (strokeSel && strokeSel.value || 'Thin').toLowerCase();
+      if(v.includes('thick')) return 6;
+      if(v.includes('medium')) return 3.5;
+      return 2.25;
+    }
+
+    function applyBrush(){
+      ctx.lineJoin = 'round';
+      ctx.lineCap  = 'round';
+      ctx.strokeStyle = activeColor;
+      ctx.globalCompositeOperation = 'source-over';
+      const bw = baseWidth();
+      const sliderVal = Math.max(0.0, Math.min(1.0, parseFloat(opacityInput?.value || '1')));
+      if(activeTool === 'pencil'){
+        ctx.lineWidth = bw;
+        ctx.globalAlpha = Math.max(0.1, sliderVal);
+      } else if(activeTool === 'marker'){
+        ctx.lineWidth = bw * 2.25;
+        ctx.globalAlpha = Math.max(0.08, sliderVal);
+      } else if(activeTool === 'highlighter'){
+        ctx.lineWidth = bw * 4.25;
+        ctx.globalAlpha = Math.max(0.08, Math.min(0.45, sliderVal));
+        ctx.globalCompositeOperation = 'multiply'; // transparent over lyrics
+      }
+    }
+
+    // --- Dirty tracking
+    let isDirty = false;
+    function markDirty(){
+      if(isDirty) return;
+      isDirty = true;
+      saveBtn?.classList.add('is-dirty');
+    }
+    function markClean(){
+      isDirty = false;
+      saveBtn?.classList.remove('is-dirty');
+    }
+    window.addEventListener('beforeunload', (e)=>{
+      if(!isDirty) return;
+      e.preventDefault();
+      e.returnValue = '';
+    });
+
+    // --- Pointer helpers
+    function localXY(evt){
+      const r = canvas.getBoundingClientRect();
+      const clientX = evt.clientX ?? (evt.touches && evt.touches[0].clientX);
+      const clientY = evt.clientY ?? (evt.touches && evt.touches[0].clientY);
+      return { x: clientX - r.left, y: clientY - r.top };
+    }
+
+    // --- Drawing handlers
+    function startDraw(e){
+      if(activeTool === 'text' || activeTool === 'none') return;
+      drawing = true;
+      const p = localXY(e);
+      lastClickPos = p;
+      applyBrush();
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      if(e.cancelable) e.preventDefault();
+    }
+    function moveDraw(e){
+      if(!drawing) return;
+      const p = localXY(e);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      markDirty();
+    }
+    function endDraw(){
+      if(!drawing) return;
+      drawing = false;
+      ctx.closePath();
+      markDirty();
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    window.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('touchstart', startDraw, {passive:false});
+    canvas.addEventListener('touchmove', moveDraw, {passive:true});
+    window.addEventListener('touchend', endDraw);
+
+    // --- Text notes
+    let textBgAlpha = Math.max(0.0, Math.min(1.0, parseFloat(opacityInput?.value || '0.9')));
+
+    canvas.addEventListener('click', (e)=>{
+      if(activeTool !== 'text') return;
+      const p = localXY(e);
+      lastClickPos = p;
+      createTextNote(p.x, p.y, '');
+      markDirty();
+    });
+    body.addEventListener('click', (e)=>{
+      if(activeTool !== 'text') return;
+      if(e.target.closest('.song-toolbar')) return;
+      const r = body.getBoundingClientRect();
+      const x = (e.clientX ?? 0) - r.left;
+      const y = (e.clientY ?? 0) - r.top;
+      lastClickPos = {x, y};
+      createTextNote(x, y, '');
+      markDirty();
+    });
+
+    function setActiveTool(tool){
+      if(activeTool === tool){
+        activeTool = 'none';            // click again to deactivate
+      } else {
+        activeTool = tool;
+      }
+      toolBtns.forEach(b=>{
+        const t = b.getAttribute('data-tool');
+        const isActive = (t === activeTool && activeTool !== 'none');
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-pressed', String(isActive));
+      });
+      applyBrush();
+    }
+    toolBtns.forEach(b=>{
+      const t = b.getAttribute('data-tool');
+      if(!t) return;
+      b.addEventListener('click', ()=> setActiveTool(t));
+    });
+
+    opacityInput?.addEventListener('input', ()=>{
+      applyBrush();
+      const v = Math.max(0.0, Math.min(1.0, parseFloat(opacityInput.value || '0.9')));
+      textBgAlpha = v;
+      const focused = document.querySelector('.note-item[contenteditable="true"]:focus');
+      if(focused){ focused.style.background = `rgba(255,255,255, ${v})`; }
+    });
+    strokeSel?.addEventListener('change', applyBrush);
+    colorInput?.addEventListener('input', ()=>{
+      activeColor = colorInput.value;
+      const focused = document.querySelector('.note-item[contenteditable="true"]:focus');
+      if(focused){ focused.style.setProperty('--note-color', activeColor); focused.style.color = activeColor; }
+    });
+
+    function setToggleLabel(){
+      if(!toggleBtn) return;
+      const off = body.classList.contains('notes-hidden');
+      toggleBtn.textContent = off ? 'Notes On' : 'Notes Off';
+      toggleBtn.setAttribute('aria-pressed', String(!off));
+      toggleBtn.title = off ? 'Show notes' : 'Hide notes';
+    }
+    toggleBtn?.addEventListener('click', ()=>{
+      body.classList.toggle('notes-hidden');
+      setToggleLabel();
+    });
+    setToggleLabel();
+
+    // --- Symbols insertion
+    window.addEventListener('gwi:insert-symbol', (ev)=>{
+      const sym = (ev.detail && ev.detail.symbol) || '';
+      if(!sym) return;
+      let x = body.clientWidth / 2, y = body.clientHeight / 2;
+      if(lastClickPos){ x = lastClickPos.x; y = lastClickPos.y; }
+      createSymbolNote(x, y, sym);
+      markDirty();
+    });
+
+    // --- Note creation/dragging/edit
+    function createNoteBase(x, y, html, editable){
+      const el = document.createElement('div');
+      el.className = 'note-item';
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
+      el.style.setProperty('--note-color', activeColor);
+      el.style.color = activeColor;
+      el.innerHTML = html || '';
+      el.style.background = `rgba(255,255,255, ${textBgAlpha})`;
+      if(editable){ el.setAttribute('contenteditable', 'true'); }
+      body.appendChild(el);
+
+      function enableEdit(){
+        if(el.getAttribute('contenteditable') !== 'true'){
+          el.setAttribute('contenteditable','true');
+        }
+        el.focus();
+        try{
+          const r = document.createRange(); r.selectNodeContents(el);
+          const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        }catch(_e){}
+      }
+      el.addEventListener('click', (ev)=>{
+        if(ev.detail === 1){ enableEdit(); }
+      });
+      el.addEventListener('dblclick', ()=> enableEdit());
+      el.addEventListener('blur', ()=>{ el.setAttribute('contenteditable','false'); });
+      el.addEventListener('input', markDirty);
+
+      el.addEventListener('mousedown', startDrag);
+      el.addEventListener('touchstart', startDrag, {passive:true});
+      return el;
+    }
+    function createTextNote(x, y, text){
+      return createNoteBase(x, y, text || 'Type…', false);
+    }
+    function createSymbolNote(x, y, sym){
+      return createNoteBase(x, y, sym, false);
+    }
+
+    function startDrag(e){
+      const el = e.currentTarget;
+      if(el.getAttribute('contenteditable') === 'true'){
+        if(e.target.nodeType === 3 && !e.altKey) return;
+      }
+      const r = el.getBoundingClientRect();
+      const host = body.getBoundingClientRect();
+      const clientX = e.clientX ?? (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY ?? (e.touches && e.touches[0].clientY);
+      const dragging = {
+        el,
+        dx: clientX - r.left,
+        dy: clientY - r.top,
+        hostLeft: host.left,
+        hostTop: host.top
+      };
+      function onDrag(ev){
+        const cx = ev.clientX ?? (ev.touches && ev.touches[0].clientX);
+        const cy = ev.clientY ?? (ev.touches && ev.touches[0].clientY);
+        const x = cx - dragging.hostLeft - dragging.dx + (dragging.el.offsetWidth/2);
+        const y = cy - dragging.hostTop  - dragging.dy + (dragging.el.offsetHeight/2);
+        dragging.el.style.left = x + 'px';
+        dragging.el.style.top  = y + 'px';
+        markDirty();
+      }
+      function endDrag(){
+        document.removeEventListener('mousemove', onDrag);
+        document.removeEventListener('mouseup', endDrag);
+        document.removeEventListener('touchmove', onDrag);
+        document.removeEventListener('touchend', endDrag);
+        markDirty();
+      }
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('mouseup', endDrag);
+      document.addEventListener('touchmove', onDrag, {passive:true});
+      document.addEventListener('touchend', endDrag);
+    }
+
+    // --- Save & restore
+    function serialize(){
+      // store canvas as png (CSS pixel dimensions) + notes list
+      const cssW = Math.floor(canvas.width / dpr);
+      const cssH = Math.floor(canvas.height / dpr);
+      // Draw a CSS-sized snapshot to avoid DPR artifacts
+      const snap = document.createElement('canvas');
+      snap.width = cssW; snap.height = cssH;
+      const sctx = snap.getContext('2d');
+      sctx.setTransform(cssW/(canvas.width/dpr), 0, 0, cssH/(canvas.height/dpr), 0, 0);
+      sctx.drawImage(canvas, 0, 0);
+      const png = snap.toDataURL('image/png');
+
+      const notes = Array.from(body.querySelectorAll('.note-item')).map(el=>{
+        const left = parseFloat(el.style.left || '0');
+        const top  = parseFloat(el.style.top  || '0');
+        const color = getComputedStyle(el).color;
+        // Extract alpha from background rgba(...)
+        let bg = getComputedStyle(el).backgroundColor || 'rgba(255,255,255,0.9)';
+        let alpha = 0.9;
+        const m = bg.match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(?:,\s*([0-9.]+)\s*)?\)/i);
+        if(m && m[1] !== undefined){ alpha = parseFloat(m[1]); }
+        return { html: el.innerHTML, left, top, color, bgAlpha: alpha };
+      });
+      return { w: cssW, h: cssH, png, notes, ts: Date.now(), version: 1 };
+    }
+    function restore(data){
+      if(!data) return;
+      // restore canvas
+      const img = new Image();
+      img.onload = function(){
+        // scale to current canvas CSS size
+        const targetW = Math.floor(canvas.width / dpr);
+        const targetH = Math.floor(canvas.height / dpr);
+        ctx.save();
+        ctx.setTransform(targetW/data.w, 0, 0, targetH/data.h, 0, 0);
+        ctx.drawImage(img, 0, 0);
+        ctx.restore();
+      };
+      img.src = data.png;
+
+      // restore notes
+      data.notes?.forEach(n=>{
+        const el = createTextNote(n.left, n.top, n.html);
+        el.style.setProperty('--note-color', n.color);
+        el.style.color = n.color;
+        el.style.background = `rgba(255,255,255, ${typeof n.bgAlpha==='number'? n.bgAlpha : 0.9})`;
+      });
+      markClean();
+    }
+
+    function doSave(){
+      try{
+        const key = getSongId();
+        const payload = serialize();
+        localStorage.setItem(key, JSON.stringify(payload));
+        markClean();
+      }catch(err){
+        console.error('Save failed:', err);
+        alert('Could not save notes (storage full or blocked).');
+      }
+    }
+    saveBtn?.addEventListener('click', doSave);
+
+    // Load previously saved notes (if any)
+    try{
+      const raw = localStorage.getItem(getSongId());
+      if(raw){
+        const data = JSON.parse(raw);
+        restore(data);
+      }
+    }catch(_e){}
+
+    // Expose manual save on Ctrl/Cmd+S
+    document.addEventListener('keydown', (e)=>{
+      const isMac = navigator.platform.toUpperCase().includes('MAC');
+      if((isMac && e.metaKey && e.key.toLowerCase()==='s') || (!isMac && e.ctrlKey && e.key.toLowerCase()==='s')){
+        e.preventDefault();
+        doSave();
+      }
+    });
+
+    // Initialize UI
+    setActiveTool('none');
+    applyBrush();
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+      <div class="tools-right">
+        <button id="saveNotes" class="btn">Save Notes</button>
+        <button id="exportPdf" class="btn">Export PDF</button>
+        <div class="menu-dot">
+          <button id="moreBtn" class="btn subtle">…</button>
+          <div id="moreMenu" class="dropdown hidden">
+            <button id="shareNotes">Share Notes</button>
+            <button id="exportPdf2">Export PDF</button>
+          </div>
+        </div>
+      </div>
     </div>
-  </section>
+<script>
+(function headerAuthToggle(){
+  const sb = window.__sb || window.supabase;
+  const loginBtn = document.getElementById('loginBtn');
+  const profileBtn = document.getElementById('profileIconBtn');
+  const userChip = document.getElementById('userChip');
+  function showLoggedIn(name, avatar){
+    if(loginBtn) loginBtn.style.display = 'none';
+    if(profileBtn) profileBtn.style.display = '';
+    if(userChip){
+      userChip.classList.remove('hidden');
+      const nameEl = document.getElementById('userName');
+      if(nameEl) nameEl.textContent = name || '';
+      const av = document.getElementById('userAvatar');
+      if(av && avatar) av.src = avatar;
+    }
+  }
+  function showLoggedOut(){
+    if(loginBtn) loginBtn.style.display = '';
+    if(profileBtn) profileBtn.style.display = 'none';
+    if(userChip) userChip.classList.add('hidden');
+  }
+  async function refresh(){
+    if(!sb){ showLoggedOut(); return; }
+    const { data } = await sb.auth.getSession();
+    const ses = data && data.session;
+    if(ses && ses.user){
+      const md = ses.user.user_metadata || {};
+      showLoggedIn(md.full_name || ses.user.email || 'Account', md.avatar_url);
+    } else {
+      showLoggedOut();
+    }
+  }
+  document.addEventListener('DOMContentLoaded', refresh);
+  if(sb && sb.auth && sb.auth.onAuthStateChange){
+    sb.auth.onAuthStateChange((_e,_s)=> refresh());
+  }
+})();
+</script>
+<script>
+(function playerToggles(){
+  const rehBtn = document.getElementById('btnReh');
+  const harmBtn = document.getElementById('btnHarm');
+  const rehRow = document.getElementById('playerMain');
+  const harmRow = document.getElementById('playerHarmony');
+  const rehAnchor = document.getElementById('audioLink');
+  const harmAnchor = document.getElementById('audioHLink');
+
+  function hasUrl(a){ return !!(a && a.getAttribute('href') && a.getAttribute('href').trim()); }
+
+  function setEnabled(btn, row, enabled){
+    if(!btn || !row) return;
+    btn.disabled = !enabled;
+    btn.style.opacity = enabled ? '' : '.55';
+    if(!enabled){ row.classList.add('is-hidden'); btn.setAttribute('aria-expanded','false'); }
+  }
+
+  // Initial enable/disable based on current hrefs
+  setEnabled(rehBtn, rehRow, hasUrl(rehAnchor));
+  setEnabled(harmBtn, harmRow, hasUrl(harmAnchor));
+
+  // Observe later changes to anchors (song.js may fill hrefs async)
+  [ [rehAnchor, rehBtn, rehRow], [harmAnchor, harmBtn, harmRow] ].forEach(([a, b, r])=>{
+    if(!a || !b || !r) return;
+    const mo = new MutationObserver(()=> setEnabled(b, r, hasUrl(a)));
+    mo.observe(a, { attributes:true, attributeFilter:['href'] });
+  });
+
+  function toggleRow(btn, row){
+    if(!btn || !row || btn.disabled) return;
+    const nowOpen = row.classList.toggle('is-hidden') ? false : true;
+    // If we just toggled and it ended up hidden, invert
+    // (row.classList.toggle returns true if class was added)
+    btn.setAttribute('aria-expanded', String(nowOpen));
+  }
+
+  rehBtn && rehBtn.addEventListener('click', ()=> toggleRow(rehBtn, rehRow));
+  harmBtn && harmBtn.addEventListener('click', ()=> toggleRow(harmBtn, harmRow));
+})();
+</script>
+<div id="songBody" class="song-body">
+  <canvas id="drawLayer" aria-label="Freehand notes layer"></canvas>
+  <!-- section bands + chord-over-lyrics will render here -->
+</div>
+
+
+  <div class="file-meta">
+    <span><span class="label">File created by:</span> <strong id="createdBy">—</strong></span>
+    <span><span class="label">Date created:</span> <strong id="createdAt">—</strong></span>
+    <span><span class="label">Last updated:</span> <strong id="updatedAt">—</strong></span>
+    <span><span class="label">Updated by:</span> <strong id="updatedBy">—</strong></span>
+  </div>
+  </div><!-- /.song-shell -->
 </main>
-<footer class="site-footer">
-  <small>© GWI</small>
+<!-- Player script inserted before </body> -->
+<script>
+(function gwiPlayers(){
+  function fmt(t){ if(!isFinite(t)) return '0:00'; t = Math.max(0, t|0); const m=(t/60)|0, s=(t%60)|0; return m+':' + (s<10?'0':'')+s; }
+
+  function setupWithUrl(root, url){
+    const audio = new Audio(url);
+    audio.preload = 'metadata';
+    const btnToggle = root.querySelector('[data-role="toggle"]');
+    const timeEl    = root.querySelector('[data-role="time"]');
+    const bar       = root.querySelector('[data-role="bar"]');
+    const fill      = root.querySelector('[data-role="fill"]');
+    const handle    = root.querySelector('[data-role="handle"]');
+    const volBtn    = root.querySelector('[data-role="vol"]');
+    const volSlider = root.querySelector('[data-role="vol-slider"]');
+
+    function setProgress(pct){ pct = Math.max(0, Math.min(1, pct)); fill.style.width = (pct*100)+'%'; handle.style.left = (pct*100)+'%'; }
+    function updateUI(){
+      if(!isFinite(audio.duration) || audio.duration===0){ timeEl.textContent = fmt(audio.currentTime); setProgress(0); return; }
+      timeEl.textContent = fmt(audio.currentTime); setProgress(audio.currentTime / audio.duration);
+    }
+    btnToggle.addEventListener('click', async ()=>{
+      try{
+        if(audio.paused){
+          await audio.play();
+          btnToggle.innerHTML='<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+        } else {
+          audio.pause();
+          btnToggle.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+        }
+      }catch(_e){ /* ignore NotSupportedError/DOMException on some browsers until media becomes available */ }
+    });
+    root.querySelectorAll('[data-jump]').forEach(b=>{
+      const jump = parseFloat(b.getAttribute('data-jump')||'0');
+      b.addEventListener('click', ()=>{ audio.currentTime = Math.max(0, Math.min(audio.duration||0, audio.currentTime + jump)); updateUI(); });
+    });
+    bar.addEventListener('click', (e)=>{
+      const r = bar.getBoundingClientRect();
+      const pct = (e.clientX - r.left) / r.width;
+      if(isFinite(audio.duration) && audio.duration>0){ audio.currentTime = Math.max(0, Math.min(audio.duration, pct * audio.duration)); }
+      updateUI();
+    });
+    let dragging=false;
+    function onMove(e){ if(!dragging) return; const r = bar.getBoundingClientRect(); const x = (e.touches? e.touches[0].clientX : e.clientX); const pct = (x - r.left) / r.width; if(isFinite(audio.duration) && audio.duration>0){ audio.currentTime = Math.max(0, Math.min(audio.duration, pct * audio.duration)); } updateUI(); }
+    handle.addEventListener('mousedown', ()=>{ dragging=true; });
+    handle.addEventListener('touchstart', ()=>{ dragging=true; }, {passive:true});
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('touchmove', onMove, {passive:true});
+    window.addEventListener('mouseup', ()=>{ dragging=false; });
+    window.addEventListener('touchend', ()=>{ dragging=false; });
+
+    volBtn.addEventListener('click', ()=>{ volSlider.classList.toggle('hidden-inline'); volSlider.focus(); });
+    volSlider.addEventListener('input', ()=>{ audio.volume = parseFloat(volSlider.value||'1'); });
+
+    audio.addEventListener('timeupdate', updateUI);
+    audio.addEventListener('loadedmetadata', updateUI);
+    audio.addEventListener('loadeddata', updateUI);
+    audio.addEventListener('durationchange', updateUI);
+    audio.addEventListener('ended', ()=>{ btnToggle.innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; updateUI(); });
+    updateUI();
+  }
+
+  function initPlayer(root){
+    if(!root) return;
+    const srcRef = root.getAttribute('data-source');
+    const anchor = srcRef ? document.querySelector(srcRef) : null;
+    if(!anchor){ root.style.display='none'; return; }
+
+    function tryInit(){
+      const url = anchor.getAttribute('href');
+      if(url && url.trim()){ root.style.display=''; setupWithUrl(root, url.trim()); return true; }
+      return false;
+    }
+    if(!tryInit()){
+      root.style.display='none';
+      const mo = new MutationObserver((muts)=>{
+        for(const m of muts){
+          if(m.type==='attributes' && m.attributeName==='href'){
+            if(tryInit()){ mo.disconnect(); break; }
+          }
+        }
+      });
+      mo.observe(anchor, { attributes:true, attributeFilter:['href'] });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    initPlayer(document.getElementById('playerMain'));
+    initPlayer(document.getElementById('playerHarmony'));
+  });
+})();
+</script>
+
+<script>
+(function symbolsUI(){
+  const btn = document.getElementById('symbolsBtn');
+  const pop = document.getElementById('symbolsPopover');
+  if(!btn || !pop) return;
+
+  function placePopover(){
+    const r = btn.getBoundingClientRect();
+    pop.style.top = (r.bottom + 8) + 'px';
+    pop.style.left = r.left + 'px';
+  }
+  function open(){ placePopover(); pop.classList.add('open'); pop.setAttribute('aria-hidden','false'); }
+  function close(){ pop.classList.remove('open'); pop.setAttribute('aria-hidden','true'); }
+
+  btn.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation();
+    if(pop.classList.contains('open')) close(); else open();
+  });
+  window.addEventListener('resize', ()=>{ if(pop.classList.contains('open')) placePopover(); });
+  document.addEventListener('click', (e)=>{ if(!pop.contains(e.target) && e.target!==btn) close(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+
+  function insertAtCursor(text){
+    const el = document.activeElement;
+    if(!el) return false;
+    // textarea or input
+    if(el.tagName==='TEXTAREA' || (el.tagName==='INPUT' && el.type==='text')){
+      const start = el.selectionStart || 0, end = el.selectionEnd || 0;
+      el.value = el.value.slice(0,start) + text + el.value.slice(end);
+      const pos = start + text.length; try{ el.setSelectionRange(pos,pos); }catch(_e){}
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+      return true;
+    }
+    // contenteditable target
+    if(el.isContentEditable){
+      try{
+        const sel = window.getSelection();
+        if(sel && sel.rangeCount){
+          const range = sel.getRangeAt(0); range.deleteContents(); range.insertNode(document.createTextNode(text));
+          range.collapse(false); sel.removeAllRanges(); sel.addRange(range);
+          return true;
+        }
+      }catch(_e){}
+    }
+    return false;
+  }
+
+  pop.addEventListener('click', (e)=>{
+    const b = e.target.closest('.sym-btn'); if(!b) return;
+    const sym = b.getAttribute('data-symbol'); if(!sym) return;
+    const ok = insertAtCursor(sym);
+    if(!ok){
+      // broadcast for custom canvases / note layers
+      window.dispatchEvent(new CustomEvent('gwi:insert-symbol', { detail:{ symbol: sym } }));
+    }
+    close();
+  });
+})();
+</script>
+
+<footer class="site-footer" style="background:#263839;color:#fff;margin-top:2rem;">
+  <div class="container" style="text-align:center;padding:2rem 0;">
+    <h2 style="margin:0 0 .5rem;font-weight:700;letter-spacing:.3px;">Genesis Worship Initiative</h2>
+    <p style="margin:0 0 1rem;opacity:.9;">Equipping our team with songs, notes, and playlists.</p>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,.25);max-width:92%;margin:0 auto 1rem;" />
+    <small style="opacity:.9;">© 2025 GWI • Built with love for the team ♡</small>
+  </div>
 </footer>
 
+<script>
+  // Auth modal open helper
+  window.openAuthModal = function(){
+    const dlg = document.getElementById('authModal');
+    if(dlg && !dlg.open) dlg.showModal();
+    setActiveTab('login');
+  };
+  // Tabs
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+  const panelLogin = document.getElementById('panelLogin');
+  const panelRegister = document.getElementById('panelRegister');
+  function setActiveTab(which){
+    const loginActive = which === 'login';
+    tabLogin?.classList.toggle('active', loginActive);
+    tabRegister?.classList.toggle('active', !loginActive);
+    tabLogin?.classList.toggle('btn--primary', loginActive);
+    tabRegister?.classList.toggle('btn--primary', !loginActive);
+    tabLogin?.classList.toggle('btn--outline', !loginActive);
+    tabRegister?.classList.toggle('btn--outline', loginActive);
+    panelLogin?.classList.toggle('active', loginActive);
+    panelRegister?.classList.toggle('active', !loginActive);
+    tabLogin?.setAttribute('aria-selected', String(loginActive));
+    tabRegister?.setAttribute('aria-selected', String(!loginActive));
+    panelLogin?.setAttribute('aria-hidden', String(!loginActive));
+    panelRegister?.setAttribute('aria-hidden', String(loginActive));
+    if(panelLogin) panelLogin.hidden = !loginActive;
+    if(panelRegister) panelRegister.hidden = loginActive;
+  }
+  tabLogin?.addEventListener('click', ()=>setActiveTab('login'));
+  tabRegister?.addEventListener('click', ()=>setActiveTab('register'));
+  document.getElementById('authClose')?.addEventListener('click', ()=>{ const d=document.getElementById('authModal'); if(d?.open) d.close(); });
+  document.getElementById('loginBtn')?.addEventListener('click', ()=>{ try{ window.openAuthModal(); }catch(e){} });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ const d=document.getElementById('authModal'); if(d?.open) d.close(); }});
+</script>
+
+<script>
+(function bindHamburger(){
+  const burger = document.getElementById('hamburger');
+  const menu   = document.getElementById('topmenu');
+  if(!burger || !menu) return;
+
+  let isOpen = false;
+  function setMenu(open){
+    isOpen = open;
+    menu.classList.toggle('open', isOpen);
+    menu.style.display = isOpen ? 'flex' : 'none';
+    menu.setAttribute('aria-hidden', String(!isOpen));
+    burger.setAttribute('aria-expanded', String(isOpen));
+  }
+  setMenu(false);
+  burger.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); setMenu(!isOpen); });
+  menu.addEventListener('click', ()=> setMenu(false));
+  document.addEventListener('click', (e)=>{ if(!isOpen) return; if(e.target.closest('#topmenu') || e.target.closest('#hamburger')) return; setMenu(false); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') setMenu(false); });
+  window.addEventListener('resize', ()=>{ if(window.innerWidth >= 992){ setMenu(false); }});
+})();
+</script>
 </body>
 </html>

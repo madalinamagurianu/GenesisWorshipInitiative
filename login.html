@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>GWI — Login</title>
+  <link rel="stylesheet" href="styles.css"/>
+
+  <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script defer src="js/supabaseClient.js"></script>
+</head>
+<body class="centered">
+  <!-- Site Header -->
+  <header class="site-header">
+  <div class="site-header__left">
+    <a href="index.html" class="brand" aria-label="Genesis Worship Initiative">
+      <img src="assets/images/logo-white.png" alt="Genesis Worship Initiative" class="brand__logo" />
+      <span class="sr-only">Genesis Worship Initiative</span>
+    </a>
+  </div>
+
+  <div class="site-header__right">
+    <!-- Profile icon (desktop) -->
+    <a href="profile.html" id="profileIconBtn" class="icon-btn profile-btn" aria-label="Profile">
+      <svg class="profile-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 001 1h14a1 1 0 001-1v-1c0-2.761-3.582-5-8-5z"/>
+      </svg>
+    </a>
+
+    <!-- Login button (hidden if logged in) -->
+    <button id="loginBtn" class="btn btn--outline">Login/Register</button>
+
+    <!-- Shown after login -->
+    <div id="userChip" class="user-chip hidden" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
+      <img id="userAvatar" alt="User avatar" class="user-chip__avatar"
+           src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24'><circle cx='12' cy='7' r='5' fill='%23ffffff'/><path d='M2 22c0-5.5 4.5-8 10-8s10 2.5 10 8' fill='%23ffffff'/></svg>"/>
+      <span id="userName" class="user-chip__name"></span>
+      <div id="userDropdown" class="menu menu--dropdown" role="menu">
+        <button id="logoutBtn" class="menu__item" role="menuitem">Logout</button>
+      </div>
+    </div>
+
+    <!-- Desktop nav -->
+    <nav class="topnav" aria-label="Primary">
+      <a href="index.html" class="btn btn--outline nav-link">Home</a>
+      <a href="playlists.html" class="btn btn--outline nav-link">Playlists</a>
+      <a href="song-index.html" class="btn btn--outline nav-link">Songs List</a>
+      <a href="availability.html" class="btn btn--outline nav-link">Availability</a>
+      <a href="prayers.html" class="btn btn--outline nav-link">Prayer Wall</a>
+      <a href="suggestions.html" class="btn btn--outline nav-link">Suggestions</a>
+    </nav>
+
+    <!-- Mobile hamburger -->
+    <button id="hamburger" aria-label="Toggle menu" aria-expanded="false" class="icon-btn">&#9776;</button>
+  </div>
+</header>
+
+  <!-- Mobile menu -->
+  <nav id="topmenu" class="mobile-menu" aria-label="Primary mobile" aria-hidden="true">
+    <a href="index.html" class="mobile-menu__link">Home</a>
+    <a href="playlists.html" class="mobile-menu__link">Playlists</a>
+    <a href="songs.html" class="mobile-menu__link">Songs List</a>
+    <a href="availability.html" class="mobile-menu__link">Availability</a>
+    <a href="prayerwall.html" class="mobile-menu__link">Prayer Wall</a>
+    <a href="suggestions.html" class="mobile-menu__link">Suggestions</a>
+  </nav>
+  <div class="card glass auth-card">
+    <h1 class="auth-title">Welcome back</h1>
+    <form id="loginForm" class="stack">
+      <label>Email
+        <input id="email" type="email" required autocomplete="email"/>
+      </label>
+      <label>Password
+        <input id="password" type="password" required autocomplete="current-password"/>
+      </label>
+      <button class="btn btn--primary btn--lg btn-center" type="submit">Login</button>
+      <p class="muted">No account? <a href="signup.html">Create one</a></p>
+      <p id="error" class="error" hidden></p>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errEl = document.getElementById('error');
+      errEl.hidden = true;
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        errEl.textContent = error.message;
+        errEl.hidden = false;
+        return;
+      }
+      // where to go next
+      const params = new URLSearchParams(location.search);
+      const redirect = params.get('redirect') || 'index.html';
+      location.href = redirect;
+    });
+  </script>
+  <script>
+    // Simple mobile menu toggle (header parity with dashboard)
+    (function(){
+      const ham = document.getElementById('hamburger');
+      const menu = document.getElementById('topmenu');
+      if (ham && menu) {
+        ham.addEventListener('click', () => {
+          const open = menu.classList.toggle('open');
+          ham.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+      }
+      // If your other pages open a modal via loginBtn, you can redirect here:
+      const lb = document.getElementById('loginBtn');
+      if (lb) lb.addEventListener('click', () => {
+        // stay on login page; this page already shows the form
+        window.location.href = 'login.html';
+      });
+    })();
+  </script>
+</body>
+</html>

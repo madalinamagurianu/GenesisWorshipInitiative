@@ -10,65 +10,392 @@
 <script defer src="assets/js/app.js"></script>
 
 <script defer src="assets/js/prayers.js"></script>
+<style>
+  /* Page-specific polish for Prayer Wall */
+  .brand__name{ color:#fff; font-weight:700; margin-left:.5rem; letter-spacing:.2px; white-space:nowrap; }
+  main.container{ padding-top:1rem; padding-bottom:2rem; }
+  .card.glass{ background:rgba(255,255,255,.55); border-radius:16px; box-shadow:0 10px 35px rgba(0,0,0,.08); padding:1.25rem; }
+  .pr-header{ margin: .25rem 0 1rem; }
+  .pr-title{ font-size:2rem; font-weight:800; letter-spacing:.2px; margin:0; text-align:center; color:#203031; }
+  .pr-sub{ text-align:center; color:#203031; opacity:.8; margin:.35rem 0 1rem; }
+  .pr-toolbar{ display:flex; align-items:center; gap:.75rem; justify-content:space-between; flex-wrap:wrap; margin: .25rem 0 1rem; }
+  .pr-counter{ background:rgba(38,56,57,.08); border:1px solid rgba(0,0,0,.08); border-radius:12px; padding:.35rem .6rem; font-weight:700; color:#203031; }
+  .filters{ display:flex; gap:.5rem; flex-wrap:wrap; }
+  .chip{
+    border:0;
+    border-radius:999px;
+    padding:.5rem .9rem;            /* slightly larger */
+    background:rgba(38,56,57,.08);
+    color:#203031;
+    font-weight:600;
+    font-size:.95rem;               /* slightly larger text */
+    line-height:1.2;
+    cursor:pointer;
+  }
+  .chip[aria-pressed="true"], .chip.active{ background:#263839; color:#fff; }
+  .pr-form{ display:grid; gap:.65rem; margin: .75rem 0 1.25rem; }
+  .pr-form .row{ display:grid; grid-template-columns:1fr; gap:.75rem; }
+  .pr-form label{ font-weight:700; color:#203031; opacity:.9; }
+  .pr-form input[type="text"], .pr-form input[type="url"], .pr-form textarea{
+    width:100%; border:1px solid rgba(0,0,0,.12); border-radius:12px; padding:.65rem .75rem; font-size:1rem; background:rgba(255,255,255,.9);
+  }
+  .pr-form textarea{ min-height:120px; resize:vertical; }
+  .switch{ display:inline-flex; align-items:center; gap:.5rem; }
+  .pr-actions{ display:flex; justify-content:center; }
+  .btn--primary{ background:#263839; color:#fff; border:0; }
+  .btn--primary:hover{ filter:brightness(1.05); }
+  #openPrayerModal{
+    font-size:.95rem;         /* smaller than .btn--lg (1.05rem) */
+    padding:.65rem 1rem;      /* slightly tighter */
+    border-radius:10px;       /* a tad smaller radius for distinction */
+  }
+  .btn--lg{ font-size:1.05rem; padding:.85rem 1.35rem; border-radius:12px; }
+  .feed{ list-style:none; padding:0; margin:0; display:grid; gap:.75rem; }
+  .feed .card{ border:1px solid rgba(0,0,0,.08); border-radius:14px; padding:.75rem .9rem; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,.04); }
+  .feed .title{ font-weight:800; margin:0 0 .25rem; color:#203031; }
+  .feed .meta{ font-size:.9rem; opacity:.7; margin-bottom:.25rem; }
+  .empty{ text-align:center; opacity:.8; padding:1rem 0; }
+  @media (min-width: 720px){
+    .pr-form .row{ grid-template-columns:1fr 1fr; }
+  }
+  /* --- Compact wall layout + modal + graph --- */
+  .pr-topbar{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin:.25rem 0 1rem; flex-wrap:wrap; }
+  .pr-graph{ margin:.25rem 0 1rem; }
+  .pr-graph .bar{ height:10px; background:rgba(38,56,57,.12); border-radius:999px; position:relative; overflow:hidden; }
+  .pr-graph .seg{ position:absolute; top:0; bottom:0; }
+  .pr-graph .seg.pending{ left:0; background:#F59E0B; }
+  .pr-graph .seg.answered{ right:0; background:#10B981; }
+  .wall{ display:grid; grid-template-columns:1fr; gap:1rem; }
+  .col-title{ font-size:1.1rem; font-weight:800; color:#203031; margin:.25rem 0 .35rem; }
+  @media(min-width: 820px){ .wall{ grid-template-columns:1fr 1fr; } }
+  /* Modal visuals reuse auth modal look */
+  dialog.modal { border:none; padding:0; background:transparent; }
+  dialog.modal::backdrop { background: rgba(38,56,57,0.55); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  .modal-card{ background: rgba(255,255,255,0.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border:1px solid rgba(255,255,255,0.35); box-shadow:0 20px 45px rgba(0,0,0,0.25); border-radius:16px; width:min(92vw,560px); overflow:hidden; }
+  .modal-close{ position:absolute; top:.5rem; right:.75rem; background:transparent; border:0; font-size:1.5rem; cursor:pointer; }
+  .modal-body{ padding:1rem; }
+  /* Make cards slightly tighter while keeping air between elements */
+  .feed .card{ padding:.7rem .85rem; }
+
+  /* Ensure mobile menu can be shown when toggled */
+  .mobile-menu {
+    display:none;
+    flex-direction:column;
+    background: rgba(255,255,255,0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border:1px solid rgba(255,255,255,0.35);
+    box-shadow:0 20px 45px rgba(0,0,0,0.25);
+    border-radius:12px;
+    padding:.5rem;
+    color:#203031;
+  }
+  .mobile-menu a {
+    color:#203031;
+    padding:.5rem .25rem;
+    text-decoration:none;
+    border-radius:8px;
+  }
+  .mobile-menu a:hover {
+    background:rgba(38,56,57,.08);
+  }
+  .mobile-menu.open{ display:flex !important; }
+
+</style>
 </head>
 <body>
 <header class="site-header">
-  <div class="banner">
-    <a class="brand" href="index.html">
-      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
-      <span class="brand-text">Genesis Worship Initiative</span>
+  <div class="site-header__left">
+    <a href="index.html" class="brand" aria-label="Genesis Worship Initiative">
+      <img src="assets/images/logo-white.png" alt="Genesis Worship Initiative" class="brand__logo" />
+      <span class="brand__name">Genesis Worship Initiative</span>
     </a>
-    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
-    <nav id="topmenu" class="menu hidden">
-      <a href="index.html">Home</a>
-      <a href="playlists.html">Playlists</a>
-      <a href="song-index.html">Songs List</a>
-      <a href="availability.html">Availability</a>
-      <a href="prayers.html">Prayer Wall</a>
-      <a href="suggestions.html">Suggestions</a>
-      <a href="profile.html">Profile</a>
-      <a class="admin-only" href="admin.html">Admin</a>
-    </nav>
   </div>
-</header>
-<form data-pr-form>
-  <input name="title">
-  <textarea name="content"></textarea>
-  <input name="image_url">
-  <button>Post</button>
-</form>
 
-<select data-pr-filter>...</select>
-<div data-pr-counter></div>
-<div data-pr-list></div>
+  <div class="site-header__right">
+    <!-- Profile icon (desktop) -->
+    <a href="profile.html" id="profileIconBtn" class="icon-btn profile-btn" aria-label="Profile">
+      <svg class="profile-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 001 1h14a1 1 0 001-1v-1c0-2.761-3.582-5-8-5z"/>
+      </svg>
+    </a>
+
+    <!-- Login button (hidden if logged in) -->
+    <button id="loginBtn" class="btn btn--outline">Login/Register</button>
+
+    <!-- Shown after login -->
+    <div id="userChip" class="user-chip hidden" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
+      <img id="userAvatar" alt="User avatar" class="user-chip__avatar"
+           src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24'><circle cx='12' cy='7' r='5' fill='%23ffffff'/><path d='M2 22c0-5.5 4.5-8 10-8s10 2.5 10 8' fill='%23ffffff'/></svg>"/>
+      <span id="userName" class="user-chip__name"></span>
+      <div id="userDropdown" class="menu menu--dropdown" role="menu">
+        <button id="logoutBtn" class="menu__item" role="menuitem">Logout</button>
+      </div>
+    </div>
+
+    <!-- Desktop nav -->
+    <nav class="topnav" aria-label="Primary">
+      <a href="index.html" class="btn btn--outline nav-link">Home</a>
+      <a href="playlists.html" class="btn btn--outline nav-link">Playlists</a>
+      <a href="song-index.html" class="btn btn--outline nav-link">Songs List</a>
+      <a href="availability.html" class="btn btn--outline nav-link">Availability</a>
+      <a href="prayers.html" class="btn btn--outline nav-link">Prayer Wall</a>
+      <a href="suggestions.html" class="btn btn--outline nav-link">Suggestions</a>
+    </nav>
+
+    <!-- Mobile hamburger -->
+    <button id="hamburger" aria-label="Toggle menu" aria-expanded="false" class="icon-btn">&#9776;</button>
+  </div>
+<!-- Mobile nav menu for small screens -->
+</header>
+<nav id="topmenu" class="mobile-menu" aria-label="Primary mobile" aria-hidden="true">
+  <a href="index.html" class="mobile-menu__link">Home</a>
+  <a href="playlists.html" class="mobile-menu__link">Playlists</a>
+  <a href="song-index.html" class="mobile-menu__link">Songs List</a>
+  <a href="availability.html" class="mobile-menu__link">Availability</a>
+  <a href="prayers.html" class="mobile-menu__link">Prayer Wall</a>
+  <a href="suggestions.html" class="mobile-menu__link">Suggestions</a>
+</nav>
 <main class="container">
   <section class="card glass">
-    <h1>Prayer Wall</h1>
-    <form id="prayerForm" class="stack">
-  <input required id="prTitle" placeholder="Title" />
-  <textarea id="prContent" placeholder="Description (optional)"></textarea>
-  <input id="prImage" placeholder="Image URL (optional)" />
-  <label class="switch">
-    <input type="checkbox" id="prAnswered" />
-    <span>Answered</span>
-  </label>
-  <button class="btn">Post</button>
-</form>
-<div class="filters">
-  <button class="chip" data-filter="all">All</button>
-  <button class="chip" data-filter="answered">Answered</button>
-  <button class="chip" data-filter="unanswered">Unanswered</button>
-</div>
-<ul id="prayersList" class="feed"></ul>
-<script type="module" src="assets/js/prayers.js"></script>
-<script type="module">
-  import './assets/js/supabaseClient.js';
-</script>
+    <header class="pr-header">
+      <h1 class="pr-title">Prayer Wall</h1>
+      <p class="pr-sub">Share requests and praise reports. Pray for one another and mark items as answered when God moves.</p>
+
+      <div class="pr-topbar" role="group" aria-label="Prayers controls">
+        <div class="filters" style="flex:1;">
+          <button class="chip" data-pr-filter-btn="all" aria-pressed="true">
+            All <span data-pr-counter-all style="margin-left:.4em;">0</span>
+          </button>
+          <button class="chip" data-pr-filter-btn="pending" aria-pressed="false">
+            Pending <span data-pr-counter-pending style="margin-left:.4em;">0</span>
+          </button>
+          <button class="chip" data-pr-filter-btn="answered" aria-pressed="false">
+            Answered <span data-pr-counter-answered style="margin-left:.4em;">0</span>
+          </button>
+        </div>
+        <button id="openPrayerModal" class="btn btn--primary btn--lg" type="button">Add prayer</button>
+      </div>
+
+      <!-- Mini stacked status bar -->
+      <div class="pr-graph" aria-hidden="true">
+        <div class="bar">
+          <span id="barPending" class="seg pending" style="width:0%"></span>
+          <span id="barAnswered" class="seg answered" style="width:0%"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Two-column wall -->
+    <div class="wall">
+      <section class="col">
+        <h2 class="col-title">Pending</h2>
+        <ul id="prayersPending" class="feed" data-pr-list="pending">
+          <li class="empty" data-empty-pending>Nothing pending yet—add the first prayer.</li>
+        </ul>
+      </section>
+      <section class="col">
+        <h2 class="col-title">Answered</h2>
+        <ul id="prayersAnswered" class="feed" data-pr-list="answered">
+          <li class="empty" data-empty-answered>No answered items yet.</li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- Hidden legacy list kept for compatibility with existing JS (if needed) -->
+    <ul id="prayersList" class="feed" data-pr-list style="display:none;">
+      <li class="empty" data-empty>Nothing here yet—be the first to post a prayer.</li>
+    </ul>
   </section>
 </main>
-<footer class="site-footer">
-  <small>© GWI</small>
+
+<!-- Add / Edit Prayer Modal -->
+<dialog id="prayerModal" class="modal" aria-labelledby="prFormTitle">
+  <div class="modal-card">
+    <button id="prModalClose" class="modal-close" aria-label="Close">×</button>
+    <div class="modal-body">
+      <h2 id="prFormTitle" class="pr-form-title" style="text-align:center;margin:.25rem 0 1rem;">Add a Prayer</h2>
+      <form id="prayerForm" class="pr-form" data-pr-form>
+        <div class="row">
+          <label for="prTitle">Title</label>
+          <input required id="prTitle" name="title" type="text" placeholder="Short title (e.g., 'Pray for exam')" />
+        </div>
+        <div class="row">
+          <label for="prContent">Description (optional)</label>
+          <textarea id="prContent" name="content" placeholder="Add context so others can pray specifically."></textarea>
+        </div>
+        <div class="row">
+          <label for="prPhoto">Attach photo (optional)</label>
+          <input id="prPhoto" name="photo_file" type="file" accept="image/*" />
+          <!-- Hidden field used to pass a data URL to existing backend as `image_url` -->
+          <input id="prImageHidden" name="image_url" type="hidden" />
+        </div>
+        <label class="switch" for="prAnswered">
+          <input type="checkbox" id="prAnswered" name="answered" />
+          <span>Answered</span>
+        </label>
+        <div class="pr-actions">
+          <button class="btn btn--primary btn--lg" type="submit">Post prayer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</dialog>
+
+<footer class="site-footer" style="background:#263839;color:#fff;margin-top:2rem;">
+  <div class="container" style="text-align:center;padding:2rem 0;">
+    <h2 style="margin:0 0 .5rem;font-weight:700;letter-spacing:.3px;">Genesis Worship Initiative</h2>
+    <p style="margin:0 0 1rem;opacity:.9;">Equipping our team with songs, notes, and playlists.</p>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,.25);max-width:92%;margin:0 auto 1rem;" />
+    <small style="opacity:.9;">© 2025 GWI • Built with love for the team ♡</small>
+  </div>
 </footer>
+
+<script>
+(function bindHamburger(){
+  const burger = document.getElementById('hamburger');
+  const menu   = document.getElementById('topmenu');
+  if(!burger || !menu) return;
+
+  let isOpen = false;
+  function setMenu(open){
+    isOpen = open;
+    menu.classList.toggle('open', isOpen);
+    menu.style.display = isOpen ? 'flex' : 'none';
+    menu.setAttribute('aria-hidden', String(!isOpen));
+    burger.setAttribute('aria-expanded', String(isOpen));
+  }
+  setMenu(false);
+  burger.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); setMenu(!isOpen); });
+  menu.addEventListener('click', ()=> setMenu(false));
+  document.addEventListener('click', (e)=>{ if(!isOpen) return; if(e.target.closest('#topmenu') || e.target.closest('#hamburger')) return; setMenu(false); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') setMenu(false); });
+  window.addEventListener('resize', ()=>{ if(window.innerWidth >= 992){ setMenu(false); }});
+})();
+</script>
+
+<script>
+(function prayerWallEnhancements(){
+  const modal = document.getElementById('prayerModal');
+  const btnOpen = document.getElementById('openPrayerModal');
+  const btnClose = document.getElementById('prModalClose');
+  const photo = document.getElementById('prPhoto');
+  const hiddenUrl = document.getElementById('prImageHidden');
+  const listAll = document.getElementById('prayersList'); // legacy (hidden)
+  const listPending = document.getElementById('prayersPending');
+  const listAnswered = document.getElementById('prayersAnswered');
+  const statPending = document.getElementById('statPending');
+  const statAnswered = document.getElementById('statAnswered');
+  const statTotal = document.getElementById('statTotal');
+  const barPending = document.getElementById('barPending');
+  const barAnswered = document.getElementById('barAnswered');
+
+  function open(){ if(modal && !modal.open) modal.showModal(); }
+  function close(){ if(modal && modal.open) modal.close(); }
+  btnOpen && btnOpen.addEventListener('click', open);
+  btnClose && btnClose.addEventListener('click', close);
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+
+  // When a file is picked, read as Data URL so existing backend that expects image_url can still work
+  photo && photo.addEventListener('change', ()=>{
+    const f = photo.files && photo.files[0];
+    if(!f){ hiddenUrl.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = ()=>{ hiddenUrl.value = reader.result || ''; };
+    reader.readAsDataURL(f);
+  });
+
+  // Helper: simple observe of the legacy list to mirror into the two wall columns and update stats
+  function recompute(){
+    const allItems = listAll ? Array.from(listAll.querySelectorAll('.card')) : [];
+    const pending = allItems.filter(el => !el.querySelector('[data-answered="true"]'));
+    const answered = allItems.filter(el => el.querySelector('[data-answered="true"]'));
+    // Update stats
+    const p = pending.length, a = answered.length, t = p + a;
+    statPending && (statPending.textContent = p);
+    statAnswered && (statAnswered.textContent = a);
+    statTotal && (statTotal.textContent = t);
+    // Also update filter counters
+    const counterAll = document.querySelector('[data-pr-counter-all]');
+    const counterPending = document.querySelector('[data-pr-counter-pending]');
+    const counterAnswered = document.querySelector('[data-pr-counter-answered]');
+    if(counterAll) counterAll.textContent = t;
+    if(counterPending) counterPending.textContent = p;
+    if(counterAnswered) counterAnswered.textContent = a;
+    const pctA = t ? (a / t) * 100 : 0;
+    const pctP = t ? (p / t) * 100 : 0;
+    if(barPending){ barPending.style.width = pctP.toFixed(1) + '%'; }
+    if(barAnswered){ barAnswered.style.width = pctA.toFixed(1) + '%'; }
+
+    // Render into columns
+    function render(listEl, items, emptySel){
+      if(!listEl) return;
+      listEl.innerHTML = '';
+      if(items.length === 0){
+        const li = document.createElement('li');
+        li.className = 'empty';
+        li.textContent = listEl === listPending ? 'Nothing pending yet—add the first prayer.' : 'No answered items yet.';
+        listEl.appendChild(li);
+        return;
+      }
+      items.forEach(el => {
+        const li = document.createElement('li');
+        li.className = 'card';
+        // clone card content
+        li.innerHTML = el.innerHTML;
+        listEl.appendChild(li);
+      });
+    }
+    render(listPending, pending);
+    render(listAnswered, answered);
+  }
+
+  // Prayer wall filter buttons
+  function bindFilterButtons() {
+    const btns = Array.from(document.querySelectorAll('[data-pr-filter-btn]'));
+    const wallCols = document.querySelectorAll('.wall > section.col');
+    function setActive(name) {
+      btns.forEach(btn => {
+        const isActive = btn.getAttribute('data-pr-filter-btn') === name;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+      // Show/hide wall columns
+      if(name === 'all') {
+        wallCols.forEach(col => col.style.display = '');
+      } else if(name === 'pending') {
+        wallCols.forEach(col => {
+          const isPending = col.querySelector('[data-pr-list="pending"]');
+          col.style.display = isPending ? '' : 'none';
+        });
+      } else if(name === 'answered') {
+        wallCols.forEach(col => {
+          const isAnswered = col.querySelector('[data-pr-list="answered"]');
+          col.style.display = isAnswered ? '' : 'none';
+        });
+      }
+    }
+    btns.forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        setActive(btn.getAttribute('data-pr-filter-btn'));
+      });
+    });
+    // Set initial state
+    setActive('all');
+  }
+
+  // Observe mutations to legacy list (prayers.js likely appends here)
+  if(window.MutationObserver && listAll){
+    const mo = new MutationObserver(recompute);
+    mo.observe(listAll, { childList:true, subtree:true });
+    // initial
+    recompute();
+    bindFilterButtons();
+  }
+})();
+</script>
 
 </body>
 </html>

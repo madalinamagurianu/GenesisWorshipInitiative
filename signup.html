@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>GWI — Sign up</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script defer src="js/supabaseClient.js"></script>
+</head>
+<body class="centered">
+  <div class="card glass auth-card">
+    <h1>Create account</h1>
+    <form id="signupForm" class="stack">
+      <label>Full name
+        <input id="fullName" type="text" required/>
+      </label>
+      <label>Email
+        <input id="email" type="email" required autocomplete="email"/>
+      </label>
+      <label>Password
+        <input id="password" type="password" required autocomplete="new-password"/>
+      </label>
+      <button class="btn" type="submit">Sign up</button>
+      <p class="muted">Have an account? <a href="login.html">Login</a></p>
+      <p id="error" class="error" hidden></p>
+      <p id="ok" class="success" hidden>Check your email to confirm your account.</p>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const full_name = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errEl = document.getElementById('error');
+      const okEl = document.getElementById('ok');
+      errEl.hidden = okEl.hidden = true;
+
+      const { error } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { full_name } }
+      });
+      if (error) {
+        errEl.textContent = error.message;
+        errEl.hidden = false;
+        return;
+      }
+      okEl.hidden = false;
+    });
+  </script>
+</body>
+</html>

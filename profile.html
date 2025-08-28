@@ -8,37 +8,148 @@
 <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script defer src="assets/js/env.js"></script>
 <script defer src="assets/js/app.js"></script>
-
-<script defer src="assets/js/profile.js"></script>
 </head>
 <body>
 <header class="site-header">
-  <div class="banner">
-    <a class="brand" href="index.html">
-      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
-      <span class="brand-text">Genesis Worship Initiative</span>
+  <div class="site-header__left">
+    <a href="index.html" class="brand" aria-label="Genesis Worship Initiative">
+      <img src="assets/images/logo-white.png" alt="Genesis Worship Initiative" class="brand__logo" />
+      <span class="sr-only">Genesis Worship Initiative</span>
     </a>
-    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
-    <nav id="topmenu" class="menu hidden">
-      <a href="index.html">Home</a>
-      <a href="playlists.html">Playlists</a>
-      <a href="song-index.html">Songs List</a>
-      <a href="availability.html">Availability</a>
-      <a href="prayers.html">Prayer Wall</a>
-      <a href="suggestions.html">Suggestions</a>
-      <a href="profile.html">Profile</a>
-      <a class="admin-only" href="admin.html">Admin</a>
+  </div>
+
+  <div class="site-header__right">
+    <!-- Profile icon (desktop) -->
+    <a href="profile.html" id="profileIconBtn" class="icon-btn profile-btn" aria-label="Profile">
+      <svg class="profile-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 001 1h14a1 1 0 001-1v-1c0-2.761-3.582-5-8-5z"/>
+      </svg>
+    </a>
+
+    <!-- Login button (hidden if logged in) -->
+    <button id="loginBtn" class="btn btn--outline">Login/Register</button>
+
+    <!-- Shown after login -->
+    <div id="userChip" class="user-chip hidden" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
+      <img id="userAvatar" alt="User avatar" class="user-chip__avatar"
+           src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24'><circle cx='12' cy='7' r='5' fill='%23ffffff'/><path d='M2 22c0-5.5 4.5-8 10-8s10 2.5 10 8' fill='%23ffffff'/></svg>"/>
+      <span id="userName" class="user-chip__name"></span>
+      <div id="userDropdown" class="menu menu--dropdown" role="menu">
+        <button id="logoutBtn" class="menu__item" role="menuitem">Logout</button>
+      </div>
+    </div>
+
+    <!-- Desktop nav -->
+    <nav class="topnav" aria-label="Primary">
+      <a href="index.html" class="btn btn--outline nav-link">Home</a>
+      <a href="playlists.html" class="btn btn--outline nav-link">Playlists</a>
+      <a href="song-index.html" class="btn btn--outline nav-link">Songs List</a>
+      <a href="availability.html" class="btn btn--outline nav-link">Availability</a>
+      <a href="prayers.html" class="btn btn--outline nav-link">Prayer Wall</a>
+      <a href="suggestions.html" class="btn btn--outline nav-link">Suggestions</a>
     </nav>
+
+    <!-- Mobile hamburger -->
+    <button id="hamburger" aria-label="Toggle menu" aria-expanded="false" class="icon-btn">&#9776;</button>
   </div>
 </header>
-<form data-prof-form>
-  <input name="full_name">
-  <input name="email" disabled>
-  <select name="preferred_language">...</select>
-  <select name="preferred_bible">...</select>
-  <select name="preferred_template">...</select>
-  <button>Save</button>
-</form>
+
+<nav id="topmenu" class="mobile-menu" aria-label="Primary mobile" aria-hidden="true">
+  <a href="index.html" class="mobile-menu__link">Home</a>
+  <a href="playlists.html" class="mobile-menu__link">Playlists</a>
+  <a href="song-index.html" class="mobile-menu__link">Songs List</a>
+  <a href="availability.html" class="mobile-menu__link">Availability</a>
+  <a href="prayers.html" class="mobile-menu__link">Prayer Wall</a>
+  <a href="suggestions.html" class="mobile-menu__link">Suggestions</a>
+</nav>
+
+<!-- Auth Modal (shared with dashboard) -->
+<dialog id="authModal" class="modal" aria-labelledby="authTitle">
+  <div class="modal-card">
+    <button id="authClose" class="modal-close" aria-label="Close">×</button>
+    <div class="tabs" role="tablist">
+      <button id="tabLogin" class="tab-btn btn btn--primary" role="tab" aria-controls="panelLogin" aria-selected="true">Login</button>
+      <button id="tabRegister" class="tab-btn btn btn--outline" role="tab" aria-controls="panelRegister" aria-selected="false">Register</button>
+    </div>
+    <div class="modal-body">
+      <!-- Login panel -->
+      <section id="panelLogin" class="tab-content active" role="tabpanel" aria-labelledby="tabLogin">
+        <h2 class="auth-title">Login</h2>
+        <form id="loginForm" class="form stack gap-sm">
+          <label>Email<input type="email" id="loginEmail" required placeholder="you@example.com"></label>
+          <label>Password<input type="password" id="loginPassword" required placeholder="Your password"></label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary btn--lg">Login</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Register panel -->
+      <section id="panelRegister" class="tab-content" role="tabpanel" aria-labelledby="tabRegister" aria-hidden="true" hidden>
+        <h2 class="auth-title">Register</h2>
+        <form id="registerForm" class="form stack gap-sm">
+          <label>Name<input type="text" id="regName" required placeholder="Your full name"></label>
+          <label>Birthday<input type="date" id="regBirthday"></label>
+          <label>Email<input type="email" id="regEmail" required placeholder="you@example.com"></label>
+          <label>Password<input type="password" id="regPassword" required minlength="6" placeholder="Minimum 6 characters"></label>
+          <label>Confirm Password<input type="password" id="regPassword2" required placeholder="Re-enter password"></label>
+
+          <fieldset class="form__fieldset">
+            <legend>What instrument(s) do you play? (select all that apply)</legend>
+            <div class="checkbox-grid">
+              <label class="chk"><input type="checkbox" value="Piano" name="regInstruments"> Piano</label>
+              <label class="chk"><input type="checkbox" value="Acoustic Guitar" name="regInstruments"> Acoustic Guitar</label>
+              <label class="chk"><input type="checkbox" value="Electric Guitar" name="regInstruments"> Electric Guitar</label>
+              <label class="chk"><input type="checkbox" value="Drums" name="regInstruments"> Drums</label>
+              <label class="chk"><input type="checkbox" value="Bass" name="regInstruments"> Bass</label>
+              <label class="chk"><input type="checkbox" value="Other" name="regInstruments"> Other</label>
+            </div>
+          </fieldset>
+          <label>Do you sing?
+            <select id="regSings">
+              <option value="">Select</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </label>
+          <label>Role
+            <select id="regRole">
+              <option value="member" selected>Member</option>
+              <option value="editor">Editor</option>
+              <option value="tech">Tech</option>
+              <option value="admin">Admin</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+            <label>Language
+              <select id="regLang">
+                <option value="ro" selected>Română</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+            <label>Default Layout
+              <select id="regLayout">
+                <option value="lyrics_only">Lyrics only</option>
+                <option value="lyrics_chords" selected>Lyrics + Chords</option>
+                <option value="cues">Cues</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary btn--lg">Create Account</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+</dialog>
+<style>
+  .auth-title{ text-align:center; font-weight:700; margin: .25rem 0 1rem; color:#203031; }
+  .form-actions{ display:flex; justify-content:center; margin-top: .25rem; }
+  .btn--lg{ font-size:1.05rem; padding:.8rem 1.25rem; border-radius:12px; }
+</style>
+
 <main class="container">
   <section class="card glass">
     <h1>Profile</h1>
@@ -62,15 +173,139 @@
   </div>
   <button class="btn">Save</button>
 </form>
-<script type="module" src="assets/js/profile.js"></script>
-<script type="module">
-  import './assets/js/supabaseClient.js';
-</script>
   </section>
 </main>
 <footer class="site-footer">
   <small>© GWI</small>
 </footer>
+
+<script>
+  // Ensure Supabase client is available from env.js
+  const _sb = (typeof supabase !== 'undefined' && window.supabase) ? window.supabase : null;
+
+  // Open from header button
+  window.openAuthModal = function(){
+    const dlg = document.getElementById('authModal');
+    if(dlg && !dlg.open) dlg.showModal();
+    // default to Login tab
+    setActiveTab('login');
+  };
+
+  // Tab switching
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+  const panelLogin = document.getElementById('panelLogin');
+  const panelRegister = document.getElementById('panelRegister');
+  function setActiveTab(which){
+    const loginActive = which === 'login';
+    tabLogin.classList.toggle('active', loginActive);
+    tabRegister.classList.toggle('active', !loginActive);
+    tabLogin.classList.toggle('btn--primary', loginActive);
+    tabRegister.classList.toggle('btn--primary', !loginActive);
+    tabLogin.classList.toggle('btn--outline', !loginActive);
+    tabRegister.classList.toggle('btn--outline', loginActive);
+
+    panelLogin.classList.toggle('active', loginActive);
+    panelRegister.classList.toggle('active', !loginActive);
+
+    // ARIA & hidden attributes
+    tabLogin.setAttribute('aria-selected', String(loginActive));
+    tabRegister.setAttribute('aria-selected', String(!loginActive));
+    panelLogin.setAttribute('aria-hidden', String(!loginActive));
+    panelRegister.setAttribute('aria-hidden', String(loginActive));
+    panelLogin.hidden = !loginActive;
+    panelRegister.hidden = loginActive;
+  }
+  tabLogin?.addEventListener('click', ()=>setActiveTab('login'));
+  tabRegister?.addEventListener('click', ()=>setActiveTab('register'));
+
+  // Modal close button (corner "X")
+  document.getElementById('authClose')?.addEventListener('click', ()=>{
+    const dlg = document.getElementById('authModal');
+    if(dlg?.open) dlg.close();
+  });
+
+  // Wire Login/Register button to open the modal
+  document.getElementById('loginBtn')?.addEventListener('click', () => {
+    try { window.openAuthModal(); } catch(e) { console.error(e); }
+  });
+
+  // Login submit
+  document.getElementById('loginForm')?.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    if(!_sb){ alert('Supabase not loaded'); return; }
+    const email = (document.getElementById('loginEmail').value||'').trim();
+    const password = document.getElementById('loginPassword').value;
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+    if(error){ alert(error.message); return; }
+    document.getElementById('authModal').close();
+    try{ window.afterAuthSuccess && window.afterAuthSuccess(data); }catch(_){ }
+  });
+
+  // Register submit
+  document.getElementById('registerForm')?.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    if(!_sb){ alert('Supabase not loaded'); return; }
+    const name = document.getElementById('regName').value.trim();
+    const birthday = document.getElementById('regBirthday').value || null;
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const password2 = document.getElementById('regPassword2').value;
+    if(password !== password2){ alert('Passwords do not match'); return; }
+    const instruments = Array.from(document.querySelectorAll('input[name="regInstruments"]:checked')).map(i=>i.value);
+    const sings = document.getElementById('regSings').value;
+    const role = document.getElementById('regRole').value;
+    const preferred_language = document.getElementById('regLang').value;
+    const preferred_template = document.getElementById('regLayout').value;
+
+    const { data, error } = await _sb.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+          birthday,
+          instruments,
+          sings,
+          role_type: role,
+          preferred_language,
+          preferred_template
+        }
+      }
+    });
+    if(error){ alert(error.message); return; }
+    alert('Account created. Please check your email to confirm.');
+    setActiveTab('login');
+  });
+
+  // Close modal on ESC
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+      const dlg = document.getElementById('authModal');
+      if(dlg && dlg.open) dlg.close();
+    }
+  });
+</script>
+
+<script>
+  (function(){
+    const btn = document.getElementById('hamburger');
+    const menu = document.getElementById('topmenu');
+    if(btn && menu){
+      btn.addEventListener('click', function(){
+        const isOpen = menu.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(isOpen));
+        menu.setAttribute('aria-hidden', String(!isOpen));
+      });
+      // close on link click (mobile)
+      menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+        menu.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        menu.setAttribute('aria-hidden', 'true');
+      }));
+    }
+  })();
+</script>
 
 </body>
 </html>

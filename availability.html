@@ -13,44 +13,444 @@
 </head>
 <body>
 <header class="site-header">
-  <div class="banner">
-    <a class="brand" href="index.html">
-      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
-      <span class="brand-text">Genesis Worship Initiative</span>
+  <div class="site-header__left">
+    <a href="index.html" class="brand" aria-label="Genesis Worship Initiative">
+      <img src="assets/images/logo-white.png" alt="Genesis Worship Initiative" class="brand__logo" />
+      <span class="brand__name">Genesis Worship Initiative</span>
     </a>
-    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
-    <nav id="topmenu" class="menu hidden">
-      <a href="index.html">Home</a>
-      <a href="playlists.html">Playlists</a>
-      <a href="song-index.html">Songs List</a>
-      <a href="availability.html">Availability</a>
-      <a href="prayers.html">Prayer Wall</a>
-      <a href="suggestions.html">Suggestions</a>
-      <a href="profile.html">Profile</a>
-      <a class="admin-only" href="admin.html">Admin</a>
+  </div>
+
+  <div class="site-header__right">
+    <!-- Profile icon (desktop) -->
+    <a href="profile.html" id="profileIconBtn" class="icon-btn profile-btn" aria-label="Profile">
+      <svg class="profile-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 001 1h14a1 1 0 001-1v-1c0-2.761-3.582-5-8-5z"/>
+      </svg>
+    </a>
+
+    <!-- Login button (hidden if logged in) -->
+    <button id="loginBtn" class="btn btn--outline">Login/Register</button>
+
+    <!-- Shown after login -->
+    <div id="userChip" class="user-chip hidden" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
+      <img id="userAvatar" alt="User avatar" class="user-chip__avatar"
+           src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24'><circle cx='12' cy='7' r='5' fill='%23ffffff'/><path d='M2 22c0-5.5 4.5-8 10-8s10 2.5 10 8' fill='%23ffffff'/></svg>"/>
+      <span id="userName" class="user-chip__name"></span>
+      <div id="userDropdown" class="menu menu--dropdown" role="menu">
+        <button id="logoutBtn" class="menu__item" role="menuitem">Logout</button>
+      </div>
+    </div>
+
+    <!-- Desktop nav -->
+    <nav class="topnav" aria-label="Primary">
+      <a href="index.html" class="btn btn--outline nav-link">Home</a>
+      <a href="playlists.html" class="btn btn--outline nav-link">Playlists</a>
+      <a href="song-index.html" class="btn btn--outline nav-link">Songs List</a>
+      <a href="availability.html" class="btn btn--outline nav-link">Availability</a>
+      <a href="prayers.html" class="btn btn--outline nav-link">Prayer Wall</a>
+      <a href="suggestions.html" class="btn btn--outline nav-link">Suggestions</a>
     </nav>
+
+    <!-- Mobile hamburger -->
+    <button id="hamburger" aria-label="Toggle menu" aria-expanded="false" class="icon-btn">&#9776;</button>
   </div>
 </header>
-<table>
-  <thead><tr><th>Date</th><th>Status</th><th>Comments</th></tr></thead>
-  <tbody data-av-body></tbody>
-</table>
+<nav id="topmenu" class="mobile-menu" aria-label="Primary mobile" aria-hidden="true">
+  <a href="index.html" class="mobile-menu__link">Home</a>
+  <a href="playlists.html" class="mobile-menu__link">Playlists</a>
+  <a href="song-index.html" class="mobile-menu__link">Songs List</a>
+  <a href="availability.html" class="mobile-menu__link">Availability</a>
+  <a href="prayers.html" class="mobile-menu__link">Prayer Wall</a>
+  <a href="suggestions.html" class="mobile-menu__link">Suggestions</a>
+</nav>
+  <!-- Auth Modal (shared with dashboard) -->
+  <dialog id="authModal" class="modal" aria-labelledby="authTitle">
+    <div class="modal-card">
+      <button id="authClose" class="modal-close" aria-label="Close">×</button>
+      <div class="tabs" role="tablist">
+        <button id="tabLogin" class="tab-btn btn btn--primary" role="tab" aria-controls="panelLogin" aria-selected="true">Login</button>
+        <button id="tabRegister" class="tab-btn btn btn--outline" role="tab" aria-controls="panelRegister" aria-selected="false">Register</button>
+      </div>
+      <div class="modal-body">
+        <!-- Login panel -->
+        <section id="panelLogin" class="tab-content active" role="tabpanel" aria-labelledby="tabLogin">
+          <h2 class="auth-title">Login</h2>
+          <form id="loginForm" class="form stack gap-sm">
+            <label>Email<input type="email" id="loginEmail" required placeholder="you@example.com"></label>
+            <label>Password<input type="password" id="loginPassword" required placeholder="Your password"></label>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--lg">Login</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Register panel -->
+        <section id="panelRegister" class="tab-content" role="tabpanel" aria-labelledby="tabRegister">
+          <h2 class="auth-title">Register</h2>
+          <form id="registerForm" class="form stack gap-sm">
+            <label>Name<input type="text" id="regName" required placeholder="Your full name"></label>
+            <label>Birthday<input type="date" id="regBirthday"></label>
+            <label>Email<input type="email" id="regEmail" required placeholder="you@example.com"></label>
+            <label>Password<input type="password" id="regPassword" required minlength="6" placeholder="Minimum 6 characters"></label>
+            <label>Confirm Password<input type="password" id="regPassword2" required placeholder="Re-enter password"></label>
+
+            <fieldset class="form__fieldset">
+              <legend>What instrument(s) do you play? (select all that apply)</legend>
+              <div class="checkbox-grid">
+                <label class="chk"><input type="checkbox" value="Piano" name="regInstruments"> Piano</label>
+                <label class="chk"><input type="checkbox" value="Acoustic Guitar" name="regInstruments"> Acoustic Guitar</label>
+                <label class="chk"><input type="checkbox" value="Electric Guitar" name="regInstruments"> Electric Guitar</label>
+                <label class="chk"><input type="checkbox" value="Drums" name="regInstruments"> Drums</label>
+                <label class="chk"><input type="checkbox" value="Bass" name="regInstruments"> Bass</label>
+                <label class="chk"><input type="checkbox" value="Other" name="regInstruments"> Other</label>
+              </div>
+            </fieldset>
+            <label>Do you sing?
+              <select id="regSings">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </label>
+            <label>Role
+              <select id="regRole">
+                <option value="member" selected>Member</option>
+                <option value="editor">Editor</option>
+                <option value="tech">Tech</option>
+                <option value="admin">Admin</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+              <label>Language
+                <select id="regLang">
+                  <option value="ro" selected>Română</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
+              <label>Default Layout
+                <select id="regLayout">
+                  <option value="lyrics_only">Lyrics only</option>
+                  <option value="lyrics_chords" selected>Lyrics + Chords</option>
+                  <option value="cues">Cues</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--lg">Create Account</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+  </dialog>
+  <style>
+    .auth-title{ text-align:center; font-weight:700; margin: .25rem 0 1rem; color:#203031; }
+    .form-actions{ display:flex; justify-content:center; margin-top: .25rem; }
+    .btn--lg{ font-size:1.05rem; padding:.8rem 1.25rem; border-radius:12px; }
+  </style>
+  <style>
+    /* Availability UI */
+    .availability__header{ text-align:center; margin-bottom: 2rem; }
+    .availability__title{ margin:.75rem 0 .75rem; }
+    .availability__sub{ margin:0 0 1.25rem; opacity:.85; }
+    .availability__legend{
+      display:flex; gap:1.25rem; justify-content:center; align-items:center;
+      font-weight:600; opacity:.9; flex-wrap:wrap;
+    }
+    .availability__legend .dot{ width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:.35rem; vertical-align:middle; }
+    .dot--yes{ background:#10B981; box-shadow:0 0 0 3px rgba(16,185,129,.2) inset; }
+    .dot--maybe{ background:#F59E0B; box-shadow:0 0 0 3px rgba(245,158,11,.2) inset; }
+    .dot--no{ background:#EF4444; box-shadow:0 0 0 3px rgba(239,68,68,.2) inset; }
+
+    .avail-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill,minmax(240px,1fr));
+      gap:1rem;
+      margin:1rem 0 1.25rem;
+    }
+    .slot-card{
+      background: rgba(255,255,255,.68);
+      border:1px dashed rgba(38,56,57,.25);
+      border-radius:14px;
+      padding:1.25rem;
+      box-shadow: 0 6px 18px rgba(0,0,0,.05) inset;
+      display:flex; flex-direction:column; gap:.6rem;
+    }
+    .slot-date{ font-weight:800; color:#203031; letter-spacing:.2px; }
+    .slot-week{ opacity:.7; font-weight:600; }
+    .choice-group{ display:flex; gap:.6rem; }
+    .choice{
+      flex:1; border:0; border-radius:10px; padding:.55rem .75rem; font-weight:700; cursor:pointer;
+      background:rgba(38,56,57,.06); color:#203031; box-shadow: inset 0 0 0 2px transparent;
+    }
+    .choice:focus{ outline:2px solid rgba(38,56,57,.35); outline-offset:2px; }
+    .choice[data-state="yes"].active{ background:rgba(16,185,129,.12); box-shadow: inset 0 0 0 2px rgba(16,185,129,.55); }
+    .choice[data-state="maybe"].active{ background:rgba(245,158,11,.12); box-shadow: inset 0 0 0 2px rgba(245,158,11,.55); }
+    .choice[data-state="no"].active{ background:rgba(239,68,68,.12); box-shadow: inset 0 0 0 2px rgba(239,68,68,.55); }
+
+    .availability__actions{
+      display:flex;
+      gap:.8rem;
+      align-items:center;
+      justify-content:center;
+      margin-top:2rem; /* more space above */
+      margin-bottom:1.5rem;
+    }
+    .availability__actions .btn{
+      padding:.9rem 1.5rem; /* slightly smaller button */
+      font-size:1.05rem;     /* tiny reduction */
+      border-radius:14px;
+    }
+    .muted{ opacity:.7; }
+
+    @media (min-width: 900px){
+      .avail-grid{
+        grid-template-columns: repeat(auto-fill,minmax(260px,1fr));
+        gap:1.1rem;
+      }
+    }
+  </style>
 <main class="container">
-  <section class="card glass">
-    <h1>Availability</h1>
-    <table class="table" id="availabilityTable">
-  <thead><tr><th>Date</th><th>User</th><th>Status</th><th>Comments</th></tr></thead>
-  <tbody></tbody>
-</table>
-<script type="module" src="assets/js/availability.js"></script>
-<script type="module">
-  import './assets/js/supabaseClient.js';
-</script>
+  <section class="card glass availability">
+    <header class="availability__header">
+      <h1 class="availability__title">Availability</h1>
+      <p class="availability__sub">Please mark your status for each upcoming Sunday. You can change it anytime.</p>
+      <div class="availability__legend" aria-label="Legend">
+        <span class="dot dot--yes" aria-hidden="true"></span> Available
+        <span class="dot dot--maybe" aria-hidden="true"></span> Maybe
+        <span class="dot dot--no" aria-hidden="true"></span> Not Available
+      </div>
+    </header>
+
+    <div id="availGrid" class="avail-grid" aria-live="polite"></div>
+
+    <div class="availability__actions">
+      <button id="saveAvailability" class="btn btn--primary">Save Availability</button>
+      <small id="saveStatus" class="muted" role="status" aria-live="polite"></small>
+    </div>
   </section>
 </main>
-<footer class="site-footer">
-  <small>© GWI</small>
+<footer class="site-footer" style="background:#263839;color:#fff;margin-top:2rem;">
+  <div class="container" style="text-align:center;padding:2rem 0;">
+    <h2 style="margin:0 0 .5rem;font-weight:700;letter-spacing:.3px;">Genesis Worship Initiative</h2>
+    <p style="margin:0 0 1rem;opacity:.9;">Equipping our team with songs, notes, and playlists.</p>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,.25);max-width:92%;margin:0 auto 1rem;" />
+    <small style="opacity:.9;">© 2025 GWI • Built with love for the team ♡</small>
+  </div>
 </footer>
 
+<script>
+  // Ensure Supabase client is available from env.js
+  const _sb = (typeof supabase !== 'undefined' && window.supabase) ? window.supabase : null;
+
+  // Open from header button
+  window.openAuthModal = function(){
+    const dlg = document.getElementById('authModal');
+    if(dlg && !dlg.open) dlg.showModal();
+    // default to Login tab
+    setActiveTab('login');
+  };
+
+  // Tab switching
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+  const panelLogin = document.getElementById('panelLogin');
+  const panelRegister = document.getElementById('panelRegister');
+  function setActiveTab(which){
+    const loginActive = which === 'login';
+    tabLogin.classList.toggle('active', loginActive);
+    tabRegister.classList.toggle('active', !loginActive);
+    tabLogin.classList.toggle('btn--primary', loginActive);
+    tabRegister.classList.toggle('btn--primary', !loginActive);
+    tabLogin.classList.toggle('btn--outline', !loginActive);
+    tabRegister.classList.toggle('btn--outline', loginActive);
+
+    panelLogin.classList.toggle('active', loginActive);
+    panelRegister.classList.toggle('active', !loginActive);
+
+    tabLogin.setAttribute('aria-selected', String(loginActive));
+    tabRegister.setAttribute('aria-selected', String(!loginActive));
+    panelLogin.setAttribute('aria-hidden', String(!loginActive));
+    panelRegister.setAttribute('aria-hidden', String(loginActive));
+    panelLogin.hidden = !loginActive;
+    panelRegister.hidden = loginActive;
+  }
+  tabLogin?.addEventListener('click', ()=>setActiveTab('login'));
+  tabRegister?.addEventListener('click', ()=>setActiveTab('register'));
+
+  // Modal close button (corner "X")
+  document.getElementById('authClose')?.addEventListener('click', ()=>{
+    const dlg = document.getElementById('authModal');
+    if(dlg?.open) dlg.close();
+  });
+
+  // Login submit
+  document.getElementById('loginForm')?.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    if(!_sb){ alert('Supabase not loaded'); return; }
+    const email = (document.getElementById('loginEmail').value||'').trim();
+    const password = document.getElementById('loginPassword').value;
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+    if(error){ alert(error.message); return; }
+    document.getElementById('authModal').close();
+    try{ window.afterAuthSuccess && window.afterAuthSuccess(data); }catch(_){ }
+  });
+
+  // Register submit
+  document.getElementById('registerForm')?.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    if(!_sb){ alert('Supabase not loaded'); return; }
+    const name = document.getElementById('regName').value.trim();
+    const birthday = document.getElementById('regBirthday').value || null;
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const password2 = document.getElementById('regPassword2').value;
+    if(password !== password2){ alert('Passwords do not match'); return; }
+    const instruments = Array.from(document.querySelectorAll('input[name="regInstruments"]:checked')).map(i=>i.value);
+    const sings = document.getElementById('regSings').value;
+    const role = document.getElementById('regRole').value;
+    const preferred_language = document.getElementById('regLang').value;
+    const preferred_template = document.getElementById('regLayout').value;
+
+    const { data, error } = await _sb.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name, birthday, instruments, sings, role_type: role, preferred_language, preferred_template }
+      }
+    });
+    if(error){ alert(error.message); return; }
+    alert('Account created. Please check your email to confirm.');
+    setActiveTab('login');
+  });
+
+  // Wire Login/Register button
+  document.getElementById('loginBtn')?.addEventListener('click', () => {
+    try { window.openAuthModal(); } catch(e) { console.error(e); }
+  });
+
+  // Hamburger open/close + close on link click
+  (function(){
+    const btn = document.getElementById('hamburger');
+    const menu = document.getElementById('topmenu');
+    if(btn && menu){
+      btn.addEventListener('click', function(){
+        const isOpen = menu.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(isOpen));
+        menu.setAttribute('aria-hidden', String(!isOpen));
+      });
+      menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+        menu.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        menu.setAttribute('aria-hidden', 'true');
+      }));
+    }
+  })();
+
+  // Close modal on ESC
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+      const dlg = document.getElementById('authModal');
+      if(dlg && dlg.open) dlg.close();
+    }
+  });
+</script>
+<script>
+(function availabilityUI(){
+  const KEY = 'gwi_availability_v1';
+  const grid = document.getElementById('availGrid');
+  const saveBtn = document.getElementById('saveAvailability');
+  const saveStatus = document.getElementById('saveStatus');
+  const sb = (typeof supabase !== 'undefined' && window.supabase) ? window.supabase : null;
+
+  if(!grid) return;
+
+  function nextSundays(){
+    const out=[];
+    const d=new Date();
+    const day=d.getDay();
+    const add=(7-day)%7;
+    d.setDate(d.getDate()+add);
+    const end=new Date();
+    end.setMonth(end.getMonth()+3);
+    while(d<=end){
+      out.push(new Date(d));
+      d.setDate(d.getDate()+7);
+    }
+    return out;
+  }
+
+  function fmtISO(date){ return date.toISOString().slice(0,10); }
+  function fmtLong(date){ return date.toLocaleDateString(undefined, { month:'long', day:'numeric' }); }
+  function weekLabel(date){ return date.toLocaleDateString(undefined, { weekday:'long' }); }
+
+  function loadState(){
+    try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(_){ return {}; }
+  }
+  function saveState(state){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+  function render(){
+    const state = loadState();
+    const days = nextSundays(); // all Sundays in next 3 months
+    grid.innerHTML='';
+    days.forEach(dt=>{
+      const id = fmtISO(dt);
+      const chosen = state[id] || '';
+      const card = document.createElement('div');
+      card.className='slot-card';
+      card.innerHTML = `
+        <div>
+          <div class="slot-date">${fmtLong(dt)}</div>
+          <div class="slot-week">${weekLabel(dt)}</div>
+        </div>
+        <div class="choice-group" role="radiogroup" aria-label="${fmtLong(dt)} availability">
+          <button class="choice" data-state="yes" role="radio" aria-checked="false">Available</button>
+          <button class="choice" data-state="maybe" role="radio" aria-checked="false">Maybe</button>
+          <button class="choice" data-state="no" role="radio" aria-checked="false">Not</button>
+        </div>
+      `;
+      const group = card.querySelector('.choice-group');
+      const choices = Array.from(card.querySelectorAll('.choice'));
+      function setActive(val){
+        choices.forEach(c=>{
+          const on = c.getAttribute('data-state')===val;
+          c.classList.toggle('active', on);
+          c.setAttribute('aria-checked', String(on));
+        });
+      }
+      setActive(chosen);
+      choices.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const val = btn.getAttribute('data-state');
+          state[id] = (state[id]===val) ? '' : val; // toggle off if clicked again
+          setActive(state[id]);
+          saveState(state);
+        });
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  async function persistToSupabase(){
+    const state = loadState();
+    if(!sb){ saveStatus.textContent = 'Saved locally (offline).'; return; }
+    try{
+      const session = await sb.auth.getSession();
+      const user = session?.data?.session?.user;
+      if(!user){ saveStatus.textContent = 'Saved locally. Login to sync.'; return; }
+      // Upsert each record into a table `availability` with columns: user_id, date, status
+      const rows = Object.entries(state).map(([date,status])=>({ user_id:user.id, date, status }));
+      if(rows.length===0){ saveStatus.textContent='Nothing to save.'; return; }
+      const { error } = await sb.from('availability').upsert(rows, { onConflict: 'user_id,date' });
+      if(error) throw error;
+      saveStatus.textContent = 'Saved!';
+    }catch(e){ console.error(e); saveStatus.textContent = 'Save failed; kept locally.'; }
+  }
+
+  saveBtn?.addEventListener('click', persistToSupabase);
+  render();
+})();
+</script>
 </body>
 </html>

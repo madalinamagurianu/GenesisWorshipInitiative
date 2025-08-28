@@ -1,63 +1,969 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>GENESIS Worship Initiative</title>
-<link rel="stylesheet" href="assets/css/styles.css" />
-<script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script defer src="assets/js/env.js"></script>
-<script defer src="assets/js/app.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GENESIS Worship Initiative</title>
+  <meta name="description" content="GWI • Songs Index – Title, Key, BPM, and quick links to YouTube & audio recordings." />
+  <link rel="stylesheet" href="assets/css/styles.css" />
 
-<script defer src="assets/js/song-index.js"></script>
+  <!-- Supabase + App bootstrap -->
+  <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script defer src="assets/js/env.js"></script>
+  <script defer src="assets/js/app.js"></script>
 </head>
 <body>
-<header class="site-header">
-  <div class="banner">
-    <a class="brand" href="index.html">
-      <img src="assets/images/logo.svg" alt="GWI" class="logo" />
-      <span class="brand-text">Genesis Worship Initiative</span>
-    </a>
-    <button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
-    <nav id="topmenu" class="menu hidden">
-      <a href="index.html">Home</a>
-      <a href="playlists.html">Playlists</a>
-      <a href="song-index.html">Songs List</a>
-      <a href="availability.html">Availability</a>
-      <a href="prayers.html">Prayer Wall</a>
-      <a href="suggestions.html">Suggestions</a>
-      <a href="profile.html">Profile</a>
-      <a class="admin-only" href="admin.html">Admin</a>
-    </nav>
-  </div>
-</header>
+  <!-- ===== Header ===== -->
+  <header class="site-header">
+    <div class="site-header__left">
+      <a href="index.html" class="brand" aria-label="Genesis Worship Initiative">
+      <img src="assets/images/logo-white.png" alt="Genesis Worship Initiative" class="brand__logo" />
+      <span class="brand__name">Genesis Worship Initiative</span>
+      </a>
+    </div>
 
-<main class="container">
-  <section class="card glass">
-    <div class="card-header">
-      <h1>Songs List</h1>
-      <input id="songSearch" class="search" placeholder="Search song title..." />
+    <div class="site-header__right">
+      <!-- Profile icon (desktop) -->
+      <a href="profile.html" id="profileIconBtn" class="icon-btn profile-btn" aria-label="Profile">
+        <svg class="profile-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 001 1h14a1 1 0 001-1v-1c0-2.761-3.582-5-8-5z"/>
+        </svg>
+      </a>
+
+      <!-- Login button (hidden if logged in) -->
+      <button id="loginBtn" class="btn btn--outline">Login/Register</button>
+
+      <!-- Shown after login -->
+      <div id="userChip" class="user-chip hidden" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
+        <img id="userAvatar" alt="User avatar" class="user-chip__avatar"
+             src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24'><circle cx='12' cy='7' r='5' fill='%23ffffff'/><path d='M2 22c0-5.5 4.5-8 10-8s10 2.5 10 8' fill='%23ffffff'/></svg>"/>
+        <span id="userName" class="user-chip__name"></span>
+        <div id="userDropdown" class="menu menu--dropdown" role="menu">
+          <button id="logoutBtn" class="menu__item" role="menuitem">Logout</button>
+        </div>
+      </div>
+
+      <!-- Desktop nav -->
+      <nav class="topnav" aria-label="Primary">
+        <a href="index.html" class="btn btn--outline nav-link">Home</a>
+        <a href="playlists.html" class="btn btn--outline nav-link">Playlists</a>
+        <a href="song-index.html" class="btn btn--outline nav-link">Songs List</a>
+        <a href="availability.html" class="btn btn--outline nav-link">Availability</a>
+        <a href="prayers.html" class="btn btn--outline nav-link">Prayer Wall</a>
+        <a href="suggestions.html" class="btn btn--outline nav-link">Suggestions</a>
+      </nav>
+
+      <!-- Mobile hamburger -->
+      <button id="hamburger" aria-label="Toggle menu" aria-expanded="false" class="icon-btn">&#9776;</button>
     </div>
-    <div class="table-responsive">
-      <table class="table" id="songsTable">
-        <thead>
-          <tr>
-            <th>Title</th><th>Key</th><th>BPM</th><th>YouTube</th><th>Audio H</th><th>Audio</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+  </header>
+
+  <!-- Mobile menu -->
+  <nav id="topmenu" class="mobile-menu" aria-label="Primary mobile" aria-hidden="true">
+    <a href="index.html" class="mobile-menu__link">Home</a>
+    <a href="playlists.html" class="mobile-menu__link">Playlists</a>
+    <a href="song-index.html" class="mobile-menu__link">Songs List</a>
+    <a href="availability.html" class="mobile-menu__link">Availability</a>
+    <a href="prayers.html" class="mobile-menu__link">Prayer Wall</a>
+    <a href="suggestions.html" class="mobile-menu__link">Suggestions</a>
+  </nav>
+
+  <!-- ===== Auth Modal ===== -->
+  <dialog id="authModal" class="modal" aria-labelledby="authTitle">
+    <div class="modal-card">
+      <button id="authClose" class="modal-close" aria-label="Close">×</button>
+      <div class="tabs" role="tablist">
+        <button id="tabLogin" class="tab-btn btn btn--primary" role="tab" aria-controls="panelLogin" aria-selected="true">Login</button>
+        <button id="tabRegister" class="tab-btn btn btn--outline" role="tab" aria-controls="panelRegister" aria-selected="false">Register</button>
+      </div>
+      <div class="modal-body">
+        <!-- Login panel -->
+        <section id="panelLogin" class="tab-content active" role="tabpanel" aria-labelledby="tabLogin">
+          <h2 class="auth-title">Login</h2>
+          <form id="loginForm" class="form stack gap-sm">
+            <label>Email<input type="email" id="loginEmail" required placeholder="you@example.com"></label>
+            <label>Password<input type="password" id="loginPassword" required placeholder="Your password"></label>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--lg">Login</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Register panel -->
+        <section id="panelRegister" class="tab-content" role="tabpanel" aria-labelledby="tabRegister">
+          <h2 class="auth-title">Register</h2>
+          <form id="registerForm" class="form stack gap-sm">
+            <label>Name<input type="text" id="regName" required placeholder="Your full name"></label>
+            <label>Birthday<input type="date" id="regBirthday"></label>
+            <label>Email<input type="email" id="regEmail" required placeholder="you@example.com"></label>
+            <label>Password<input type="password" id="regPassword" required minlength="6" placeholder="Minimum 6 characters"></label>
+            <label>Confirm Password<input type="password" id="regPassword2" required placeholder="Re-enter password"></label>
+
+            <fieldset class="form__fieldset">
+              <legend>What instrument(s) do you play? (select all that apply)</legend>
+              <div class="checkbox-grid">
+                <label class="chk"><input type="checkbox" value="Piano" name="regInstruments"> Piano</label>
+                <label class="chk"><input type="checkbox" value="Acoustic Guitar" name="regInstruments"> Acoustic Guitar</label>
+                <label class="chk"><input type="checkbox" value="Electric Guitar" name="regInstruments"> Electric Guitar</label>
+                <label class="chk"><input type="checkbox" value="Drums" name="regInstruments"> Drums</label>
+                <label class="chk"><input type="checkbox" value="Bass" name="regInstruments"> Bass</label>
+                <label class="chk"><input type="checkbox" value="Other" name="regInstruments"> Other</label>
+              </div>
+            </fieldset>
+            <label>Do you sing?
+              <select id="regSings">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </label>
+            <label>Role
+              <select id="regRole">
+                <option value="member" selected>Member</option>
+                <option value="editor">Editor</option>
+                <option value="tech">Tech</option>
+                <option value="admin">Admin</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+              <label>Language
+                <select id="regLang">
+                  <option value="ro" selected>Română</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
+              <label>Default Layout
+                <select id="regLayout">
+                  <option value="lyrics_only">Lyrics only</option>
+                  <option value="lyrics_chords" selected>Lyrics + Chords</option>
+                  <option value="cues">Cues</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--lg">Create Account</button>
+            </div>
+          </form>
+        </section>
+      </div>
     </div>
-    <div class="pager">
+  </dialog>
+
+  <!-- Page-specific styles (table + filters + modal visuals) -->
+  <style>
+    /* ===== Audio Player Styles ===== */
+    .audio-player-modal {
+      position: fixed;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: rgba(40,50,55,0.35);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    .audio-player-modal .audio-player-container {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 32px rgba(40,56,56,0.15);
+      padding: 1.5rem 1.25rem 1.25rem 1.25rem;
+      min-width: 320px;
+      max-width: 96vw;
+      display: flex; flex-direction: column; align-items: stretch;
+      position: relative;
+    }
+    .audio-player-modal .close-btn {
+      position: absolute; top: 0.5rem; right: 0.75rem;
+      background: none; border: none;
+      font-size: 1.5rem; color: #263839; cursor: pointer;
+      font-weight: bold; line-height: 1;
+      z-index: 2;
+      padding: 0 .2rem;
+    }
+    .audio-player {
+      display: flex; flex-direction: row; align-items: center; gap: 1rem;
+      margin: .5rem 0 0 0;
+    }
+    .audio-player .play-btn,
+    .audio-player .skip-btn,
+    .audio-player .vol-btn {
+      background: #263839;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 38px; height: 38px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: background .15s, transform .12s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.12);
+    }
+    .audio-player .vol-btn svg{
+      width:18px;
+      height:18px;
+      fill:#fff;            /* make the speaker icon white like other icons */
+      display:block;
+    }
+    .audio-player .play-btn:hover,
+    .audio-player .skip-btn:hover,
+    .audio-player .vol-btn:hover {
+      background: #1b2828;
+      transform: translateY(-1px);
+    }
+    .audio-player .skip-btn {
+      width: 34px; height: 34px;
+      font-size: .95rem;
+    }
+    .audio-player .time {
+      min-width: 48px; text-align: center; font-variant-numeric: tabular-nums;
+      font-size: 1rem; color: #263839; font-weight: 500;
+    }
+    .audio-player .progress-bar-wrap {
+      flex: 1 1 90px;
+      margin: 0 .5rem;
+      display: flex; align-items: center;
+    }
+    .audio-player .progress-bar {
+      appearance: none;
+      width: 100%;
+      height: 3px;
+      border-radius: 999px;
+      background: #e6ecec;
+      outline: none;
+      overflow: hidden;
+      accent-color: #263839;
+      margin: 0 6px;
+      background-image: linear-gradient(#263839, #263839);
+      background-size: 0% 100%;
+      background-repeat: no-repeat;
+    }
+    .audio-player .progress-bar::-webkit-slider-thumb {
+      appearance: none;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #263839;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.15);
+      cursor: pointer;
+      margin-top: -4.5px;
+    }
+    .audio-player .progress-bar::-moz-range-thumb {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #263839;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.15);
+      cursor: pointer;
+    }
+    .audio-player .progress-bar::-webkit-slider-runnable-track { height: 3px; border-radius: 999px; }
+    .audio-player .progress-bar::-moz-range-track { height: 3px; border-radius: 999px; }
+    .audio-player .skip-label { font-size: .7rem; margin-left: 2px; font-weight: 600; line-height: 1; }
+    .audio-player .volume-control {
+      width: 64px;
+      accent-color: #263839;
+      margin-left: 0.5rem;
+    }
+    .audio-player .volume-icon {
+      font-size: 1.15rem;
+      margin-right: 0.15rem;
+      color: #263839;
+      vertical-align: middle;
+    }
+    .auth-title{ text-align:center; font-weight:700; margin:.25rem 0 1rem; color:#203031; }
+    .form-actions{ display:flex; justify-content:center; margin-top:.25rem; }
+    .btn--lg{ font-size:1.05rem; padding:.8rem 1.25rem; border-radius:12px; }
+    .btn--sm{ font-size:.85rem; padding:.35rem .6rem; border-radius:8px; }
+    .chip-row .chip{ border:1px solid rgba(0,0,0,.12); background:#fff; padding:.25rem .5rem; border-radius:999px; cursor:pointer; font-weight:600; }
+    .chip-row .chip.active{ background:#263839; color:#fff; border-color:#263839; }
+    .labels-panel{ display:flex; }
+    .labels-panel .label-opt{ display:flex; align-items:center; gap:.35rem; background:#fff; border:1px solid rgba(0,0,0,.12); padding:.25rem .5rem; border-radius:8px; }
+    .pager.outer{ margin:1.25rem auto 2.75rem; display:flex; gap:.6rem; align-items:center; justify-content:center; }
+    .table-responsive{ padding-bottom:1rem; }
+
+    /* --- Song table column sizing + icons --- */
+    .table.compact th, .table.compact td { vertical-align: middle; }
+    .table.compact { table-layout:auto; }
+    .table.compact th:nth-child(1), .table.compact td:nth-child(1){ width:62%; max-width:none; }
+    .table.compact th:nth-child(2), .table.compact td:nth-child(2),
+    .table.compact th:nth-child(3), .table.compact td:nth-child(3){ white-space:nowrap; width:1%; text-align:center; }
+    .table.compact th:nth-child(4), .table.compact td:nth-child(4),
+    .table.compact th:nth-child(5), .table.compact td:nth-child(5),
+    .table.compact th:nth-child(6), .table.compact td:nth-child(6){ width:1%; text-align:center; }
+    .table.compact th:nth-child(7), .table.compact td:nth-child(7){ width:auto; }
+    .table.compact td:first-child { white-space: normal; }
+
+    /* Consistent round play icon */
+    .icon-round{ display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:999px; background:rgba(38,56,57,0.1); box-shadow: inset 0 0 0 2px rgba(38,56,57,.35); text-decoration:none; transition: transform .12s ease, background .12s ease; }
+    .icon-round:hover{ transform: translateY(-1px); background:rgba(38,56,57,.2); }
+    .icon-round svg{ width:14px; height:14px; fill: var(--primary, #263839); }
+
+    /* Force consistent icon styling inside the songs table */
+    #songsTable a.icon-round, #songsTable a.icon-round:visited { appearance:none; border:0!important; outline:none; background:rgba(38,56,57,0.10)!important; box-shadow:inset 0 0 0 2px rgba(38,56,57,0.35)!important; color:inherit; text-decoration:none!important; }
+    #songsTable a.icon-round:hover { background:rgba(38,56,57,0.20)!important; }
+    #songsTable a.icon-round svg { display:block; width:14px; height:14px; fill:#263839; }
+
+    /* YouTube image icon (from assets) */
+    .yt-link { display:inline-flex; align-items:center; justify-content:center; }
+    .yt-icon { width:22px; height:22px; display:block; }
+    #songsTable td.col-yt { text-align:center; white-space:nowrap; }
+
+    /* Audio & Doc image icons (from assets) */
+    .audio-link, .doc-link { display:inline-flex; align-items:center; justify-content:center; }
+    .audio-icon, .doc-icon { width:22px; height:22px; display:block; }
+
+    #songsTable td { vertical-align: middle; }
+    #songsTable td.col-yt, #songsTable td.col-reh, #songsTable td.col-harm { text-align:center; white-space:nowrap; }
+    #songsTable a.icon-round { display:inline-grid; place-items:center; width:28px!important; height:28px!important; line-height:0; padding:0!important; margin:0; border:0!important; background:rgba(38,56,57,0.10)!important; box-shadow:inset 0 0 0 2px rgba(38,56,57,0.35)!important; border-radius:999px!important; }
+    #songsTable a.icon-round svg { width:14px!important; height:14px!important; display:block!important; fill:#263839!important; }
+
+    /* Title clamps to max 2 lines */
+    #songsTable td.col-title {
+      white-space: normal !important;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;   /* limit to 2 lines */
+      -webkit-box-orient: vertical;
+      word-break: break-word;
+    }
+
+    /* HARDEN */
+    #songsTable, #songsTable * { box-sizing:border-box; }
+    #songsTable th, #songsTable td { padding:10px 14px!important; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif!important; font-size:16px!important; line-height:1.25!important; }
+    #songsTable tr { contain: layout paint; }
+    #songsTable a { color:inherit!important; text-decoration:none!important; }
+    #songsTable a:focus { outline:none!important; }
+    #songsTable tr:hover { background:inherit!important; }
+    #songsTable tr:nth-child(even), #songsTable tr:nth-child(odd) { background:transparent!important; }
+
+    /* Helpers for search area */
+    .search-wrap { max-width:900px; margin:0 auto 1rem; display:flex; flex-direction:column; gap:.5rem; align-items:stretch; }
+    .filters { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+
+    .brand{ display:inline-flex; align-items:center; gap:.6rem; text-decoration:none; }
+    .brand__logo{ height:28px; display:block; }
+    .brand__name{ margin-left:.0rem; font-weight:700; color:#fff; letter-spacing:.2px; white-space:nowrap; }
+
+    /* Clickable rows */
+    #songsTable tr.row-link { cursor: pointer; }
+    #songsTable tr.row-link:hover { background: rgba(38,56,57,.06) !important; }
+  </style>
+
+  <!-- ===== Main ===== -->
+  <main class="container">
+    <h1 id="songsTitle" class="page-title" style="text-align:center;margin:0 0 1rem;">Songs List</h1>
+
+    <!-- Search + Labels ABOVE the card -->
+    <div class="search-wrap">
+      <div class="search-row" style="display:flex;gap:.75rem;align-items:center;">
+        <label for="songSearch" class="visually-hidden">Search songs</label>
+        <input id="songSearch" class="search" placeholder="Search songs" autocomplete="off" style="flex:1;" />
+      </div>
+      <div class="filters">
+        <button id="filterLabelsBtn" type="button" class="btn btn--outline btn--sm">Labels</button>
+        <div id="labelsPanel" class="labels-panel" style="display:none;gap:.5rem;flex-wrap:wrap;"></div>
+      </div>
+    </div>
+
+    <section class="card glass" aria-labelledby="songsTitle">
+      <div class="table-responsive">
+        <table class="table compact" id="songsTable">
+          <thead>
+            <tr>
+              <th scope="col">Title</th>
+              <th scope="col">Key</th>
+              <th scope="col">BPM</th>
+              <th scope="col" title="YouTube link">YouTube</th>
+              <th scope="col" title="Rehearsal recordings">Repetitii</th>
+              <th scope="col" title="Harmony recording">Harmony</th>
+              <th scope="col">Labels</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div id="noResults" class="empty-state hidden" role="status" aria-live="polite">No songs found.</div>
+        <div id="loadingState" class="loading muted hidden">Loading songs…</div>
+      </div>
+    </section>
+    <div class="pager outer">
       <button class="btn" id="prevPage">&larr; Prev</button>
-      <span id="pageInfo" class="muted"></span>
+      <span id="pageInfo" class="muted" aria-live="polite"></span>
       <button class="btn" id="nextPage">Next &rarr;</button>
     </div>
-  </section>
-</main>
-<footer class="site-footer">
-  <small>© GWI</small>
-</footer>
+  </main>
 
+  <!-- ===== Footer ===== -->
+  <footer class="site-footer" style="background:#263839;color:#fff;margin-top:2rem;">
+    <div class="container" style="text-align:center;padding:2rem 0;">
+      <h2 style="margin:0 0 .5rem;font-weight:700;letter-spacing:.3px;">Genesis Worship Initiative</h2>
+      <p style="margin:0 0 1rem;opacity:.9;">Equipping our team with songs, notes, and playlists.</p>
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,.25);max-width:92%;margin:0 auto 1rem;" />
+      <small style="opacity:.9;">© 2025 GWI • Built with love for the team ♡</small>
+    </div>
+  </footer>
+
+  <!-- ===== Scripts: Auth modal logic + hamburger + songs table loader ===== -->
+  <script>
+    // Ensure Supabase client is available from env.js
+    const _sb = (typeof supabase !== 'undefined' && window.supabase) ? window.supabase : null;
+
+    // Open from header button
+    window.openAuthModal = function(){
+      const dlg = document.getElementById('authModal');
+      if(dlg && !dlg.open) dlg.showModal();
+      setActiveTab('login');
+    };
+
+    // Tabs
+    const tabLogin = document.getElementById('tabLogin');
+    const tabRegister = document.getElementById('tabRegister');
+    const panelLogin = document.getElementById('panelLogin');
+    const panelRegister = document.getElementById('panelRegister');
+    function setActiveTab(which){
+      const loginActive = which === 'login';
+      tabLogin.classList.toggle('active', loginActive);
+      tabRegister.classList.toggle('active', !loginActive);
+      tabLogin.classList.toggle('btn--primary', loginActive);
+      tabRegister.classList.toggle('btn--primary', !loginActive);
+      tabLogin.classList.toggle('btn--outline', !loginActive);
+      tabRegister.classList.toggle('btn--outline', loginActive);
+      panelLogin.classList.toggle('active', loginActive);
+      panelRegister.classList.toggle('active', !loginActive);
+      tabLogin.setAttribute('aria-selected', String(loginActive));
+      tabRegister.setAttribute('aria-selected', String(!loginActive));
+      panelLogin.setAttribute('aria-hidden', String(!loginActive));
+      panelRegister.setAttribute('aria-hidden', String(loginActive));
+      panelLogin.hidden = !loginActive;
+      panelRegister.hidden = loginActive;
+    }
+    tabLogin?.addEventListener('click', ()=>setActiveTab('login'));
+    tabRegister?.addEventListener('click', ()=>setActiveTab('register'));
+
+    // Modal close button (corner "X")
+    document.getElementById('authClose')?.addEventListener('click', ()=>{
+      const dlg = document.getElementById('authModal');
+      if(dlg?.open) dlg.close();
+    });
+
+    // Wire Login/Register button
+    document.getElementById('loginBtn')?.addEventListener('click', ()=>{
+      try { window.openAuthModal(); } catch(e) { console.error(e); }
+    });
+
+    // Close modal on ESC
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape'){
+        const dlg = document.getElementById('authModal');
+        if(dlg && dlg.open) dlg.close();
+      }
+    });
+
+    // Hamburger robust toggle (open/close, outside click, ESC, link click)
+    (function bindHamburger(){
+      const burger = document.getElementById('hamburger');
+      const menu   = document.getElementById('topmenu');
+      if(!burger || !menu) return;
+      let isOpen = false;
+      function setMenu(open){
+        isOpen = open;
+        menu.classList.toggle('open', isOpen);
+        menu.style.display = isOpen ? 'flex' : 'none';
+        menu.setAttribute('aria-hidden', String(!isOpen));
+        burger.setAttribute('aria-expanded', String(isOpen));
+      }
+      setMenu(false);
+      burger.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); setMenu(!isOpen); });
+      menu.addEventListener('click', ()=> setMenu(false));
+      document.addEventListener('click', (e)=>{ if(!isOpen) return; if(e.target.closest('#topmenu') || e.target.closest('#hamburger')) return; setMenu(false); });
+      document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') setMenu(false); });
+      window.addEventListener('resize', ()=>{ if(window.innerWidth >= 992){ setMenu(false); } });
+    })();
+  </script>
+
+  <script>
+    // Guard so this file only boots once per page load
+    if (!window.__songsIndexBootstrapped) {
+      window.__songsIndexBootstrapped = true;
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        const sb = window.__sb || window.supabase; // shared client from env.js
+        const tableBody   = document.querySelector('#songsTable tbody');
+        const noResults   = document.getElementById('noResults');
+        const loadingState= document.getElementById('loadingState');
+        const searchInput = document.getElementById('songSearch');
+        const labelsBtn   = document.getElementById('filterLabelsBtn');
+        const labelsPanel = document.getElementById('labelsPanel');
+        const pageInfoEl  = document.getElementById('pageInfo');
+        const prevBtn     = document.getElementById('prevPage');
+        const nextBtn     = document.getElementById('nextPage');
+
+        let selectedLabels = new Set();
+
+        // Pagination state
+        const PAGE_SIZE = 20;
+        let currentPage = 1;
+        let totalRows   = 0;
+        let totalPages  = 1;
+
+        // RENDER TOKEN: if a newer fetch starts, older results are ignored
+        let __renderToken = 0;
+
+    // Helpers
+    const esc = (s)=> String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/>/g,'&gt;');
+    const YT_ICON_SRC    = 'assets/images/youtube.svg';
+    const AUDIO_ICON_SRC = 'assets/images/audio.svg';
+    const DOC_ICON_SRC   = 'assets/images/doc.svg';
+
+    const youtubeLink = (url) => (url && typeof url === 'string' && url.trim())
+      ? `<a class="yt-link" href="${esc(url)}" target="_blank" rel="noopener"><img class="yt-icon" src="${YT_ICON_SRC}" alt="YouTube" /></a>`
+      : '—';
+
+    // Use the new audio.svg for audio links (Repetitii / Harmony)
+    // Render as button for audio player popup
+    const audioLink = (url) => (url && typeof url === 'string' && url.trim())
+      ? `<button class="audio-trigger" type="button" data-src="${esc(url)}" aria-label="Play audio"><img class="audio-icon" src="${AUDIO_ICON_SRC}" alt="Audio" /></button>`
+      : '—';
+
+    // Doc icon helper (not used in this table yet, but available for future columns)
+    const docLink = (url) => (url && typeof url === 'string' && url.trim())
+      ? `<a class="doc-link" href="${esc(url)}" target="_blank" rel="noopener"><img class="doc-icon" src="${DOC_ICON_SRC}" alt="Document" /></a>`
+      : '—';
+
+    const norm = (s) => (s || '').toString().normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+
+        if(!sb){
+          console.error("Supabase client not initialized. Check assets/js/env.js and script order.");
+          loadingState?.classList.add('hidden');
+          noResults.textContent = 'Could not connect to data source (Supabase).';
+          noResults.classList.remove('hidden');
+          return;
+        }
+
+        // Core fetcher with pagination + race protection
+        async function fetchSongs({page=1, searchText=""} = {}){
+          const myToken = ++__renderToken;
+          currentPage = page;
+          const offset = (currentPage - 1) * PAGE_SIZE;
+          const parts = norm(searchText).split(/\s+/).filter(Boolean);
+
+          loadingState.classList.remove('hidden');
+          noResults.classList.add('hidden');
+          while (tableBody.firstChild) tableBody.removeChild(tableBody.firstChild);
+          tableBody.innerHTML = "";
+
+          let query = sb
+            .from('songs')
+            .select('id, title, default_key, bpm, youtube_url, audio_harmony_url, audio_main_url, labels', { count: 'exact' })
+            .order('title', { ascending: true })
+            .range(offset, offset + PAGE_SIZE - 1);
+
+          if(searchText){ query = query.ilike('title', `%${searchText}%`); }
+
+          const { data, error, count } = await query;
+
+          if (myToken !== __renderToken) return; // abandon if outdated
+
+          loadingState.classList.add('hidden');
+
+          if(error){
+            console.error(error);
+            noResults.textContent = 'Could not load songs (' + (error.message || 'unknown error') + ').';
+            noResults.classList.remove('hidden');
+            updatePager(0);
+            return;
+          }
+
+          totalRows  = count || 0;
+          totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+
+          if(!data || data.length === 0){
+            noResults.classList.remove('hidden');
+            updatePager(0);
+            return;
+          }
+
+          // Client-side filters: labels (any selected)
+          let filtered = data;
+          if(selectedLabels.size > 0){
+            const wanted = Array.from(selectedLabels);
+            filtered = filtered.filter(s => Array.isArray(s.labels) && s.labels.some(l => wanted.includes(l)));
+          }
+          // Extra diacritics-insensitive words filter on the current page window
+          const partsHas = parts.length > 0;
+          if(partsHas){
+            filtered = filtered.filter((s)=>{
+              const hay = norm(s.title);
+              return parts.every(p => hay.includes(p));
+            });
+          }
+
+          const frag = document.createDocumentFragment();
+          // Get user role for label editing
+          let userRole = window.__userRole || null;
+          if (!userRole && window.__user) userRole = window.__user.role;
+          filtered.forEach(song => {
+            const tr = document.createElement('tr');
+            tr.className = 'row-link';
+            tr.setAttribute('tabindex', '0');
+            tr.dataset.href = `song.html?id=${song.id}`;
+            const canEditLabels = (window.__userRole === 'admin' || window.__userRole === 'editor');
+            tr.innerHTML = [
+              `<td class="col-title">${esc(song.title)}</td>`,
+              `<td class="col-key">${esc(song.default_key)}</td>`,
+              `<td class="col-bpm">${song.bpm ?? ''}</td>`,
+              `<td class="col-yt">${youtubeLink(song.youtube_url)}</td>`,
+              `<td class="col-reh">${audioLink(song.audio_main_url)}</td>`,
+              `<td class="col-harm">${audioLink(song.audio_harmony_url)}</td>`,
+              canEditLabels
+                ? `<td class="col-labels" data-songid="${song.id}"></td>`
+                : `<td class="col-labels">${Array.isArray(song.labels) ? song.labels.map(esc).join(', ') : ''}</td>`
+            ].join('');
+            frag.appendChild(tr);
+            // If editable, inject checkboxes and Save button after row is in DOM
+            if (canEditLabels) {
+              setTimeout(() => {
+                const td = tr.querySelector('.col-labels');
+                if (!td) return;
+                // Get all labels in the system
+                let allLabels = [];
+                if (window.__allLabels) {
+                  allLabels = window.__allLabels;
+                } else {
+                  // fallback - collect from current labelsPanel
+                  allLabels = Array.from(document.querySelectorAll('#labelsPanel input[type=checkbox]')).map(i=>i.value);
+                  window.__allLabels = allLabels;
+                }
+                // Render checkboxes
+                td.innerHTML = `<div class="labels-edit-list" style="display:flex;flex-wrap:wrap;gap:.35rem 0.5rem;margin-bottom:.5rem;"></div>
+                  <button class="btn btn--primary btn--sm save-labels-btn" style="margin-top:0.25rem;">Save</button>
+                  <span class="save-status" style="margin-left:.5rem;font-size:.95em;color:#2a7c2a;display:none;">Saved!</span>`;
+                const listDiv = td.querySelector('.labels-edit-list');
+                const currentLabels = Array.isArray(song.labels) ? song.labels : [];
+                allLabels.forEach(lab => {
+                  const id = `editlab_${song.id}_${lab.replace(/[^a-z0-9]/gi,'_')}`;
+                  const wrap = document.createElement('label');
+                  wrap.className = 'label-opt';
+                  wrap.innerHTML = `<input type="checkbox" value="${lab}" id="${id}"> <span>${lab}</span>`;
+                  const cb = wrap.querySelector('input');
+                  if (currentLabels.includes(lab)) cb.checked = true;
+                  listDiv.appendChild(wrap);
+                });
+                // Save button handler
+                td.querySelector('.save-labels-btn').addEventListener('click', async (e) => {
+                  e.stopPropagation();
+                  const cbs = td.querySelectorAll('input[type=checkbox]');
+                  const labels = Array.from(cbs).filter(cb=>cb.checked).map(cb=>cb.value);
+                  try {
+                    await updateLabels(song.id, labels);
+                    td.querySelector('.save-status').style.display = '';
+                    setTimeout(()=>{ td.querySelector('.save-status').style.display = 'none'; }, 1600);
+                  } catch(err) {
+                    alert('Could not save labels: ' + (err.message || err));
+                  }
+                });
+              }, 0);
+            }
+          });
+        // Store all labels for editing UI
+        try{
+          const { data: labelsData } = await sb.from('songs').select('labels');
+          const set = new Set();
+          (labelsData||[]).forEach(r=>{
+            if(Array.isArray(r.labels)) r.labels.forEach(l=>{ if(l && l.trim()) set.add(l.trim()); });
+          });
+          window.__allLabels = Array.from(set).sort();
+          labelsPanel.innerHTML = '';
+          window.__allLabels.forEach(l => {
+            const id = `lab_${l.replace(/[^a-z0-9]/gi,'_')}`;
+            const wrap = document.createElement('label');
+            wrap.className = 'label-opt';
+            wrap.innerHTML = `<input type="checkbox" value="${l}" id="${id}"> <span>${l}</span>`;
+            labelsPanel.appendChild(wrap);
+            wrap.querySelector('input').addEventListener('change', (e)=>{
+              if(e.target.checked) selectedLabels.add(l); else selectedLabels.delete(l);
+              fetchSongs({ page: 1, searchText: searchInput.value.trim() });
+            });
+          });
+        }catch(_e){ /* non-fatal */ }
+        // ========== Audio Player Modal logic ==========
+        // Reusable audio player modal
+        function createAudioPlayerModal(src) {
+          // Remove any existing modal
+          document.querySelectorAll('.audio-player-modal').forEach(m => m.remove());
+          const modal = document.createElement('div');
+          modal.className = 'audio-player-modal';
+          modal.innerHTML = `
+            <div class="audio-player-container">
+              <button class="close-btn" aria-label="Close">&times;</button>
+              <div style="font-weight:600;color:#263839;margin-bottom:.35rem;font-size:1.07em;">Audio Player</div>
+              <div class="audio-player"></div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+          const closeBtn = modal.querySelector('.close-btn');
+          closeBtn.addEventListener('click', ()=>modal.remove());
+          modal.addEventListener('click', e=>{
+            if (e.target === modal) modal.remove();
+          });
+          // Init player UI
+          const playerDiv = modal.querySelector('.audio-player');
+          initAudioPlayer(playerDiv, src);
+        }
+
+        // Audio player UI logic
+        function initAudioPlayer(container, src) {
+          container.innerHTML = '';
+          // Hidden audio element
+          const audio = document.createElement('audio');
+          audio.src = src;
+          audio.preload = 'auto';
+          audio.style.display = 'none';
+          container.appendChild(audio);
+
+          // Buttons: back 10s, play/pause, forward 10s
+          const skipBackBtn = document.createElement('button');
+          skipBackBtn.className = 'skip-btn';
+          skipBackBtn.setAttribute('aria-label','Back 10 seconds');
+          skipBackBtn.innerHTML = '↺<span class="skip-label">10s</span>';
+
+          const playBtn = document.createElement('button');
+          playBtn.className = 'play-btn';
+          playBtn.setAttribute('aria-label','Play/Pause');
+          playBtn.textContent = '⏸'; // will switch on pause/play events
+
+          const skipFwdBtn = document.createElement('button');
+          skipFwdBtn.className = 'skip-btn';
+          skipFwdBtn.setAttribute('aria-label','Forward 10 seconds');
+          skipFwdBtn.innerHTML = '↻<span class="skip-label">10s</span>';
+
+          const time = document.createElement('span');
+          time.className = 'time';
+          time.textContent = '0:00 / 0:00';
+
+          const progressWrap = document.createElement('div');
+          progressWrap.className = 'progress-bar-wrap';
+          const progress = document.createElement('input');
+          progress.type = 'range';
+          progress.className = 'progress-bar';
+          progress.min = 0; progress.max = 100; progress.value = 0; progress.step = 1;
+          progressWrap.appendChild(progress);
+
+          // Volume button (mute/unmute) + slider
+          const volBtn = document.createElement('button');
+          volBtn.className = 'vol-btn';
+          volBtn.setAttribute('aria-label','Mute/Unmute');
+          function getVolSVG(muted, vol){
+            if (muted || vol === 0) {
+              // speaker with small X (muted)
+              return `
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M4 9v6h4l5 4V5L8 9H4z"></path>
+                  <path d="M16.5 8.5l4 4m0-4l-4 4" stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none"></path>
+                </svg>`;
+            }
+            // speaker with waves (volume on)
+            return `
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 9v6h4l5 4V5L8 9H4z"></path>
+                <path d="M17 9c1.1 1.1 1.1 4.9 0 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"></path>
+                <path d="M19.5 7c2 2 2 8 0 10" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"></path>
+              </svg>`;
+          }
+          volBtn.innerHTML = getVolSVG(false, 1);
+
+          const volume = document.createElement('input');
+          volume.type = 'range';
+          volume.className = 'volume-control';
+          volume.min = 0; volume.max = 1; volume.step = 0.01; volume.value = 1;
+
+          // Compose layout: -10s | play/pause | +10s | time | progress | volBtn | volume
+          container.appendChild(skipBackBtn);
+          container.appendChild(playBtn);
+          container.appendChild(skipFwdBtn);
+          container.appendChild(time);
+          container.appendChild(progressWrap);
+          container.appendChild(volBtn);
+          container.appendChild(volume);
+
+          // Helpers
+          function fmt(secs) {
+            if (isNaN(secs)) return '0:00';
+            secs = Math.floor(secs);
+            return `${Math.floor(secs/60)}:${('0'+(secs%60)).slice(-2)}`;
+          }
+          function updateTimeUI() {
+            time.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+            const pct = (audio.duration ? (audio.currentTime / audio.duration * 100) : 0);
+            progress.value = Math.round(pct);
+            // paint filled part of the line
+            progress.style.backgroundSize = `${pct}% 100%`;
+          }
+
+          // Wire up
+          audio.addEventListener('timeupdate', updateTimeUI);
+          audio.addEventListener('loadedmetadata', updateTimeUI);
+          audio.addEventListener('ended', ()=> { playBtn.textContent = '▶'; });
+
+          playBtn.addEventListener('click', ()=>{
+            if (audio.paused) { audio.play(); }
+            else { audio.pause(); }
+          });
+          audio.addEventListener('play',  ()=>{ playBtn.textContent = '⏸'; });
+          audio.addEventListener('pause', ()=>{ playBtn.textContent = '▶'; });
+
+          skipBackBtn.addEventListener('click', ()=>{ audio.currentTime = Math.max(0, audio.currentTime - 10); });
+          skipFwdBtn.addEventListener('click',  ()=>{ audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
+
+          progress.addEventListener('input', ()=>{
+            if (audio.duration) {
+              const t = progress.value / 100 * audio.duration;
+              audio.currentTime = t;
+              updateTimeUI();
+            }
+          });
+
+          // Volume + mute button
+          volume.addEventListener('input', ()=>{
+            audio.volume = Number(volume.value);
+            volBtn.innerHTML = getVolSVG(audio.muted, audio.volume);
+          });
+          volBtn.addEventListener('click', ()=>{
+            if (audio.muted || audio.volume === 0) {
+              audio.muted = false;
+              if (audio.volume === 0) { audio.volume = 1; volume.value = 1; }
+            } else {
+              audio.muted = true;
+            }
+            volBtn.innerHTML = getVolSVG(audio.muted, audio.volume);
+          });
+          audio.addEventListener('volumechange', ()=>{
+            volBtn.innerHTML = getVolSVG(audio.muted, audio.volume);
+          });
+
+          // Keyboard: space toggles play/pause inside the player
+          container.tabIndex = 0;
+          container.addEventListener('keydown', e=>{
+            if (e.key === ' ') { playBtn.click(); e.preventDefault(); }
+          });
+
+          // Autoplay if allowed
+          audio.play().catch(()=>{ /* ignore autoplay blocks */ });
+        }
+
+        // Audio trigger event delegation
+        document.querySelector('#songsTable tbody').addEventListener('click', (e)=>{
+          const btn = e.target.closest('.audio-trigger');
+          if (btn && btn.dataset.src) {
+            e.preventDefault();
+            e.stopPropagation();
+            createAudioPlayerModal(btn.dataset.src);
+            return;
+          }
+        });
+        // ========== updateLabels function ==========
+        // Usage: await updateLabels(songId, labelsArray)
+        async function updateLabels(songId, labels) {
+          if (!window.supabase) throw new Error('Supabase not loaded');
+          const { error } = await window.supabase.from('songs').update({ labels }).eq('id', songId);
+          if (error) throw error;
+        }
+        // Detect user role for label editing
+        (async function getUserRoleForLabels(){
+          if (!window.supabase) return;
+          const { data: { user } } = await window.supabase.auth.getUser();
+          if (user) {
+            // Fetch user's role from profiles table if available
+            let role = null;
+            try {
+              const { data: profile } = await window.supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+              if (profile && profile.role) role = profile.role;
+            } catch {}
+            window.__user = user;
+            window.__userRole = role || 'member';
+          } else {
+            window.__user = null;
+            window.__userRole = null;
+          }
+        })();
+
+          if (myToken !== __renderToken) return;
+          tableBody.appendChild(frag);
+          updatePager(totalRows);
+        }
+
+        function updatePager(total){
+          if(!pageInfoEl) return;
+          if(total === 0){
+            pageInfoEl.textContent = '';
+            prevBtn.disabled = true;
+            nextBtn.disabled = true;
+            return;
+          }
+          pageInfoEl.textContent = `Page ${currentPage} of ${totalPages} • ${total} songs`;
+          prevBtn.disabled = (currentPage <= 1);
+          nextBtn.disabled = (currentPage >= totalPages);
+        }
+
+        // Initial load
+        await fetchSongs({ page: 1, searchText: '' });
+
+        // Build labels list (distinct)
+        try{
+          const { data: labelsData } = await sb.from('songs').select('labels');
+          const set = new Set();
+          (labelsData||[]).forEach(r=>{
+            if(Array.isArray(r.labels)) r.labels.forEach(l=>{ if(l && l.trim()) set.add(l.trim()); });
+          });
+          labelsPanel.innerHTML = '';
+          Array.from(set).sort().forEach(l => {
+            const id = `lab_${l.replace(/[^a-z0-9]/gi,'_')}`;
+            const wrap = document.createElement('label');
+            wrap.className = 'label-opt';
+            wrap.innerHTML = `<input type="checkbox" value="${l}" id="${id}"> <span>${l}</span>`;
+            labelsPanel.appendChild(wrap);
+            wrap.querySelector('input').addEventListener('change', (e)=>{
+              if(e.target.checked) selectedLabels.add(l); else selectedLabels.delete(l);
+              fetchSongs({ page: 1, searchText: searchInput.value.trim() });
+            });
+          });
+        }catch(_e){ /* non-fatal */ }
+
+        // Toggle labels panel
+        labelsBtn?.addEventListener('click', ()=>{
+          const show = labelsPanel.style.display !== 'flex';
+          labelsPanel.style.display = show ? 'flex' : 'none';
+        });
+
+        // Search handling (debounced; also reset to page 1)
+        let debounceTimer;
+        searchInput.addEventListener('input', e => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(()=>{
+            fetchSongs({ page: 1, searchText: e.target.value.trim() });
+          }, 250);
+        });
+
+        // Pager controls
+        prevBtn.addEventListener('click', ()=>{ if(currentPage > 1) fetchSongs({ page: currentPage - 1, searchText: searchInput.value.trim() }); });
+        nextBtn.addEventListener('click', ()=>{ if(currentPage < totalPages) fetchSongs({ page: currentPage + 1, searchText: searchInput.value.trim() }); });
+
+        // Make entire row clickable (but let icon links work normally)
+        document.querySelector('#songsTable tbody').addEventListener('click', (e)=>{
+          if (e.target.closest('.audio-trigger')) return; // don't navigate when clicking the audio icon
+          const a = e.target.closest('a');
+          if (a) return; // let link clicks behave normally
+          const tr = e.target.closest('tr.row-link');
+          if (tr && tr.dataset.href) {
+            window.location.href = tr.dataset.href;
+          }
+        });
+        document.querySelector('#songsTable tbody').addEventListener('keydown', (e)=>{
+          if (e.key === 'Enter') {
+            const tr = e.target.closest('tr.row-link');
+            if (tr && tr.dataset.href) {
+              window.location.href = tr.dataset.href;
+            }
+          }
+        });
+      });
+    }
+  </script>
 </body>
 </html>
