@@ -1,13 +1,33 @@
 // Supabase environment + global client bootstrap
 // -------------------------------------------------
-// 1) Put your project URL and anon key here (already filled)
 window.__SUPABASE_URL__ = "https://jjqphteqyqjkathxmrrx.supabase.co";
 window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqcXBodGVxeXFqa2F0aHhtcnJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTE0NDYsImV4cCI6MjA3MDY2NzQ0Nn0.qRCVrh3MI0KmZZTrSGGshycIj7A5PywFlqIxqwcqBqw";
 
 (function initSupabaseClient(){
+  // If we ever need to fire the “ready” events, do it consistently.
+  function fireReady(client){
+    try { document.dispatchEvent(new CustomEvent("sb:ready", { detail: client })); } catch(_) {}
+    try { window.dispatchEvent(new CustomEvent("sb:ready",  { detail: client })); } catch(_) {}
+    try { window.dispatchEvent(new CustomEvent("gwi:sb-ready", { detail: client })); } catch(_) {}
+    // Resolve the promise
+    try {
+      if (resolver) { resolver(client); resolver = null; }
+    } catch(_) {}
+  }
+
+  // Promise that any script can await
+  let resolver = null;
+  if (!window.sbReady) {
+    window.sbReady = new Promise((res) => { resolver = res; });
+  } else {
+    // If someone already created it, we won't overwrite it, but we still want a resolver
+    // If __sb exists already, resolve immediately a tick later.
+    if (window.__sb) { setTimeout(() => fireReady(window.__sb), 0); }
+  }
+
   if (window.__sb_bootstrapped) {
-    // If already bootstrapped, still notify listeners that the client is ready
-    try { document.dispatchEvent(new CustomEvent('sb:ready', { detail: window.__sb })); } catch(_){}
+    // Already bootstrapped; still broadcast readiness for late listeners
+    if (window.__sb) fireReady(window.__sb);
     return;
   }
   window.__sb_bootstrapped = true;
@@ -15,31 +35,31 @@ window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ
   const URL = window.__SUPABASE_URL__;
   const KEY = window.__SUPABASE_ANON_KEY__;
 
-  // Guard: values must exist
-  if(!URL || !KEY){
+  if (!URL || !KEY) {
     console.error("Supabase URL/KEY missing in env.js");
     return;
   }
 
   // Wait until the supabase library is available, then create one global client
+  let waitedMs = 0;
   function ensure(){
-    if(!(window.supabase && window.supabase.createClient)){
-      // try again shortly (defer/load order safe)
+    if (!(window.supabase && window.supabase.createClient)) {
+      waitedMs += 30;
+      if (waitedMs > 10000 && waitedMs < 10100) {
+        console.warn("Supabase SDK still not present after 10s. Check the <script> tag order/network.");
+      }
       return void setTimeout(ensure, 30);
     }
 
-    // Create a single global client (singleton)
     if (!window.__sb) {
       window.__sb = window.supabase.createClient(URL, KEY);
       window.supabaseClient = window.__sb; // back-compat alias
     }
 
-    // Let pages know the client is ready (every time ensure() wins the race)
-    try { document.dispatchEvent(new CustomEvent('sb:ready', { detail: window.__sb })); } catch(_){}
-
-    const sb = window.__sb;
+    fireReady(window.__sb);
 
     // Optional: keep header Login/Register vs Profile icon in sync (bind once)
+    const sb = window.__sb;
     async function updateHeaderAuthUI(){
       try {
         const { data: { session } } = await sb.auth.getSession();
@@ -59,7 +79,6 @@ window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ
       window.__sbAuthBound = true;
       try {
         const { data: listener } = sb.auth.onAuthStateChange((_event,_session)=>updateHeaderAuthUI());
-        // keep unsubscribe globally to avoid stacking listeners across HMR/reloads
         window.__sbAuthUnsub = listener?.subscription?.unsubscribe?.bind(listener?.subscription) || null;
       } catch(_){}
     }
@@ -67,14 +86,13 @@ window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ
 
   ensure();
 
-  // Stable getter
   if (!window.getSupabase) {
     window.getSupabase = function(){ return window.__sb; };
   }
 
   // Prevent accidental reassignments of URL/KEY in other scripts
   try {
-    Object.defineProperty(window, '__SUPABASE_URL__',  { configurable:false, writable:false, value: URL });
-    Object.defineProperty(window, '__SUPABASE_ANON_KEY__', { configurable:false, writable:false, value: KEY });
+    Object.defineProperty(window, '__SUPABASE_URL__',  { configurable:false, writable:false, value: window.__SUPABASE_URL__ });
+    Object.defineProperty(window, '__SUPABASE_ANON_KEY__', { configurable:false, writable:false, value: window.__SUPABASE_ANON_KEY__ });
   } catch(_){}
 })();
